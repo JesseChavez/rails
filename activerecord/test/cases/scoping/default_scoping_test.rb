@@ -517,10 +517,12 @@ class DefaultScopingTest < ActiveRecord::TestCase
 
   def test_with_abstract_class_scope_should_be_executed_in_correct_context
     vegetarian_pattern, gender_pattern = if current_adapter?(:Mysql2Adapter)
-      [/`lions`.`is_vegetarian`/, /`lions`.`gender`/]
-    else
-      [/"lions"."is_vegetarian"/, /"lions"."gender"/]
-    end
+                                           [/`lions`.`is_vegetarian`/, /`lions`.`gender`/]
+                                         elsif current_adapter?(:MSSQLAdapter)
+                                           [/\[lions\].\[is_vegetarian\]/, /\[lions\].\[gender\]/]
+                                         else
+                                           [/"lions"."is_vegetarian"/, /"lions"."gender"/]
+                                         end
 
     assert_match vegetarian_pattern, Lion.all.to_sql
     assert_match gender_pattern, Lion.female.to_sql

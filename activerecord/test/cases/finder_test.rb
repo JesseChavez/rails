@@ -181,7 +181,8 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_exists_does_not_select_columns_without_alias
-    assert_sql(/SELECT\W+1 AS one FROM ["`]topics["`]/i) do
+    # assert_sql(/SELECT\W+1 AS one FROM ["`]topics["`]/i) do
+    assert_sql(/SELECT\W+1 AS one FROM ["\[`]topics["\]`]/i) do
       Topic.exists?
     end
   end
@@ -886,7 +887,13 @@ class FinderTest < ActiveRecord::TestCase
 
   def test_string_sanitation
     assert_not_equal "'something ' 1=1'", ActiveRecord::Base.sanitize("something ' 1=1")
-    assert_equal "'something; select table'", ActiveRecord::Base.sanitize("something; select table")
+    # assert_equal "'something; select table'", ActiveRecord::Base.sanitize("something; select table")
+
+    if current_adapter?(:MSSQLAdapter)
+      assert_equal "N'something; select table'", ActiveRecord::Base.sanitize("something; select table")
+    else
+      assert_equal "'something; select table'", ActiveRecord::Base.sanitize("something; select table")
+    end
   end
 
   def test_count_by_sql

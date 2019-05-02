@@ -60,6 +60,9 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
       # on Oracle aliases are truncated to 30 characters and are quoted in uppercase
       assert_no_match(/"firm_with_primary_keys_compani"\."id"/i, sql)
       assert_match(/"firm_with_primary_keys_compani"\."name"/i, sql)
+    elsif current_adapter?(:MSSQLAdapter)
+      assert_no_match(/\[firm_with_primary_keys_companies\]\.\[id\]/, sql)
+      assert_match(/\[firm_with_primary_keys_companies\]\.\[name\]/, sql)
     else
       assert_no_match(/"firm_with_primary_keys_companies"\."id"/, sql)
       assert_match(/"firm_with_primary_keys_companies"\."name"/, sql)
