@@ -1002,7 +1002,11 @@ class EagerAssociationTest < ActiveRecord::TestCase
   end
 
   def test_count_with_include
-    assert_equal 3, authors(:david).posts_with_comments.where("length(comments.body) > 15").references(:comments).count
+    if current_adapter?(:MSSQLAdapter)
+      assert_equal 3, authors(:david).posts_with_comments.where("len(comments.body) > 15").references(:comments).count
+    else
+      assert_equal 3, authors(:david).posts_with_comments.where("length(comments.body) > 15").references(:comments).count
+    end
   end
 
   def test_association_loading_notification
