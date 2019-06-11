@@ -237,19 +237,36 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_reverse_order_with_function
-    topics = Topic.order("length(title)").reverse_order
+    if current_adapter?(:MSSQLAdapter)
+      topics = Topic.order("len(title)").reverse_order
+    else
+      topics = Topic.order("length(title)").reverse_order
+    end
     assert_equal topics(:second).title, topics.first.title
   end
 
   def test_reverse_arel_assoc_order_with_function
-    topics = Topic.order(Arel.sql("length(title)") => :asc).reverse_order
+    if current_adapter?(:MSSQLAdapter)
+      topics = Topic.order(Arel.sql("len(title)") => :asc).reverse_order
+    else
+      topics = Topic.order(Arel.sql("length(title)") => :asc).reverse_order
+    end
     assert_equal topics(:second).title, topics.first.title
   end
 
   def test_reverse_order_with_function_other_predicates
-    topics = Topic.order("author_name, length(title), id").reverse_order
+    if current_adapter?(:MSSQLAdapter)
+      topics = Topic.order("author_name, len(title), id").reverse_order
+    else
+      topics = Topic.order("author_name, length(title), id").reverse_order
+    end
     assert_equal topics(:second).title, topics.first.title
-    topics = Topic.order("length(author_name), id, length(title)").reverse_order
+
+    if current_adapter?(:MSSQLAdapter)
+      topics = Topic.order("len(author_name), id, len(title)").reverse_order
+    else
+      topics = Topic.order("length(author_name), id, length(title)").reverse_order
+    end
     assert_equal topics(:fifth).title, topics.first.title
   end
 
