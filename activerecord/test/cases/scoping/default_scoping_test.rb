@@ -492,6 +492,8 @@ class DefaultScopingTest < ActiveRecord::TestCase
       [/`lions`.`is_vegetarian`/, /`lions`.`gender`/]
     elsif current_adapter?(:OracleAdapter)
       [/"LIONS"."IS_VEGETARIAN"/, /"LIONS"."GENDER"/]
+    elsif current_adapter?(:MSSQLAdapter)
+      [/\[lions\].\[is_vegetarian\]/, /\[lions\].\[gender\]/]
     else
       [/"lions"."is_vegetarian"/, /"lions"."gender"/]
     end
