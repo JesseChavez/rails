@@ -145,7 +145,10 @@ class EachTest < ActiveRecord::TestCase
 
   def test_find_in_batches_should_quote_batch_order
     c = Post.connection
-    assert_sql(/ORDER BY #{c.quote_table_name('posts')}.#{c.quote_column_name('id')}/) do
+
+    table_name_dot_column_name = Regexp.escape("#{c.quote_table_name('posts')}.#{c.quote_column_name('id')}")
+
+    assert_sql(/ORDER BY #{table_name_dot_column_name}/) do
       Post.find_in_batches(batch_size: 1) do |batch|
         assert_kind_of Array, batch
         assert_kind_of Post, batch.first
@@ -410,7 +413,10 @@ class EachTest < ActiveRecord::TestCase
 
   def test_in_batches_should_quote_batch_order
     c = Post.connection
-    assert_sql(/ORDER BY #{c.quote_table_name('posts')}.#{c.quote_column_name('id')}/) do
+
+    table_name_dot_column_name = Regexp.escape("#{c.quote_table_name('posts')}.#{c.quote_column_name('id')}")
+
+    assert_sql(/ORDER BY #{table_name_dot_column_name}/) do
       Post.in_batches(of: 1) do |relation|
         assert_kind_of ActiveRecord::Relation, relation
         assert_kind_of Post, relation.first
