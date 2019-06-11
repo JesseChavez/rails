@@ -454,6 +454,10 @@ module ActiveRecord
             @connection.create_table :trains, force: true
           end
 
+          # NOTE: mssql cannot recreate referenced table with force: :cascade
+          # but this is mimic in the adapter.
+          # https://docs.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql?view=sql-server-2017
+          #
           # can recreate referenced table with force: :cascade
           @connection.create_table :trains, force: :cascade
           assert_equal [], @connection.foreign_keys(:wagons)
