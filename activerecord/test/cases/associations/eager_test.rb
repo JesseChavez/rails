@@ -39,6 +39,7 @@ class EagerLoadingTooManyIdsTest < ActiveRecord::TestCase
   end
 
   def test_eager_loading_too_may_ids
+    skip('eager_load does not have a limit, mssql fails to load 65535 record created by the fixture')
     assert_equal Citation.count, Citation.eager_load(:citations).offset(0).size
   end
 end
