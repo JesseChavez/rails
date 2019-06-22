@@ -62,9 +62,11 @@ if subsecond_precision_supported?
     end
 
     def test_invalid_datetime_precision_raises_error
+      precision = current_adapter?(:MSSQLAdapter) ? 8 : 7
+
       assert_raises ActiveRecord::ActiveRecordError do
         @connection.create_table(:foos, force: true) do |t|
-          t.timestamps precision: 7
+          t.timestamps precision: precision
         end
       end
     end
