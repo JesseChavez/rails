@@ -120,8 +120,12 @@ if ActiveRecord::Base.connection.supports_foreign_keys?
           assert_equal 1, foreign_keys.size
 
           fk = foreign_keys.first
-          if current_adapter?(:Mysql2Adapter)
+          if current_adapter?(:Mysql2Adapter, :MSSQLAdapter)
             # ON DELETE RESTRICT is the default on MySQL
+            # NOTE: according above docs in SQL Server ON DELETE NO ACTION behaves
+            # exactly the same as ON DELETE RESTRICT
+            # https://docs.microsoft.com/en-us/sql/t-sql/statements/alter-table-table-constraint-transact-sql?view=sq
+            # https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html
             assert_nil fk.on_delete
           else
             assert_equal :restrict, fk.on_delete
