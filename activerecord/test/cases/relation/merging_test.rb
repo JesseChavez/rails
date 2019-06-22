@@ -128,7 +128,12 @@ class RelationMergingTest < ActiveRecord::TestCase
 
   def test_merging_with_order_with_binds
     relation = Post.all.merge(Post.order([Arel.sql("title LIKE ?"), "%suffix"]))
-    assert_equal ["title LIKE '%suffix'"], relation.order_values
+
+    if current_adapter?(:MSSQLAdapter)
+      assert_equal ["title LIKE N'%suffix'"], relation.order_values
+    else
+      assert_equal ["title LIKE '%suffix'"], relation.order_values
+    end
   end
 
   def test_merging_with_order_without_binds
