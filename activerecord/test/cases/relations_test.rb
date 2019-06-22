@@ -303,19 +303,19 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_reverse_order_with_function
-    topics = Topic.order(Arel.sql("length(title)")).reverse_order
+    topics = Topic.order(Arel.sql("len(title)")).reverse_order
     assert_equal topics(:second).title, topics.first.title
   end
 
   def test_reverse_arel_assoc_order_with_function
-    topics = Topic.order(Arel.sql("length(title)") => :asc).reverse_order
+    topics = Topic.order(Arel.sql("len(title)") => :asc).reverse_order
     assert_equal topics(:second).title, topics.first.title
   end
 
   def test_reverse_order_with_function_other_predicates
-    topics = Topic.order(Arel.sql("author_name, length(title), id")).reverse_order
+    topics = Topic.order(Arel.sql("author_name, len(title), id")).reverse_order
     assert_equal topics(:second).title, topics.first.title
-    topics = Topic.order(Arel.sql("length(author_name), id, length(title)")).reverse_order
+    topics = Topic.order(Arel.sql("len(author_name), id, len(title)")).reverse_order
     assert_equal topics(:fifth).title, topics.first.title
   end
 
