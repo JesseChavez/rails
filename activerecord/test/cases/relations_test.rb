@@ -1898,12 +1898,14 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   test "using a custom table affects the wheres" do
+    skip("NOTE: sqlserver arel doesn't put the 'ORDER BY' before 'OFFSET'")
     post = posts(:welcome)
 
     assert_equal post, custom_post_relation.where!(title: post.title).take
   end
 
   test "using a custom table with joins affects the joins" do
+    skip("NOTE: sqlserver arel doesn't put the 'ORDER BY' before 'OFFSET'")
     post = posts(:welcome)
 
     assert_equal post, custom_post_relation.joins(:author).where!(title: post.title).take
