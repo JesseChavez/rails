@@ -196,6 +196,7 @@ class OptimisticLockingTest < ActiveRecord::TestCase
   end
 
   def test_update_with_dirty_primary_key
+    skip('MSSQL does not allow id updates')
     assert_raises(ActiveRecord::RecordNotUnique) do
       person = Person.find(1)
       person.id = 2
