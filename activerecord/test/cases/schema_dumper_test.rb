@@ -353,6 +353,8 @@ class SchemaDumperTest < ActiveRecord::TestCase
       assert_match %r{t\.integer\s+"atoms_in_universe",\s+precision: 38}, output
     elsif current_adapter?(:FbAdapter)
       assert_match %r{t\.integer\s+"atoms_in_universe",\s+precision: 18}, output
+    elsif current_adapter?(:MSSQLAdapter)
+      assert_match %r{t\.decimal\s+"atoms_in_universe",\s+precision: 38}, output
     else
       assert_match %r{t\.decimal\s+"atoms_in_universe",\s+precision: 55}, output
     end
