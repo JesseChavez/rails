@@ -467,6 +467,12 @@ module ActiveRecord
           elsif current_adapter?(:SQLite3Adapter)
             skip "SQLite3 does not support DROP TABLE CASCADE syntax"
           end
+
+          # NOTE: mssql cannot recreate referenced table with force: :cascade
+          # but this is mimic in the adapter.
+          # https://docs.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql?view=sql-server-2017
+          #
+
           # can't re-create table referenced by foreign key
           assert_raises(ActiveRecord::StatementInvalid) do
             @connection.create_table :trains, force: true
