@@ -75,10 +75,12 @@ if subsecond_precision_supported?
     end
 
     def test_invalid_time_precision_raises_error
+      precision = current_adapter?(:MSSQLAdapter) ? 8 : 7
+
       assert_raises ArgumentError do
         @connection.create_table(:foos, force: true) do |t|
-          t.time :start,  precision: 7
-          t.time :finish, precision: 7
+          t.time :start,  precision: precision
+          t.time :finish, precision: precision
         end
       end
     end
