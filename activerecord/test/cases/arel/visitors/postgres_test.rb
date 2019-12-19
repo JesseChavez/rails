@@ -191,6 +191,7 @@ module Arel
 
       describe "Nodes::BindParam" do
         it "increments each bind param" do
+          skip 'This does not apply for MSSQL'
           query = @table[:name].eq(Arel::Nodes::BindParam.new(1))
             .and(@table[:id].eq(Arel::Nodes::BindParam.new(1)))
           _(compile(query)).must_be_like %{
