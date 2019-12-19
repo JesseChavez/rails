@@ -114,6 +114,7 @@ module ActiveRecord
       end
 
       def test_connection_pool_starts_reaper_in_fork
+        skip('JRuby doe not support fork')
         spec = ActiveRecord::Base.connection_pool.spec.dup
         spec.config[:reaping_frequency] = "0.0001"
 
