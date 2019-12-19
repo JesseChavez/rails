@@ -163,8 +163,8 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "order: always allows Arel" do
-    ids_depr     = with_unsafe_raw_sql_deprecated { Post.order(Arel.sql("length(title)")).pluck(:title) }
-    ids_disabled = with_unsafe_raw_sql_disabled   { Post.order(Arel.sql("length(title)")).pluck(:title) }
+    ids_depr     = with_unsafe_raw_sql_deprecated { Post.order(Arel.sql("len(title)")).pluck(:title) }
+    ids_disabled = with_unsafe_raw_sql_disabled   { Post.order(Arel.sql("len(title)")).pluck(:title) }
 
     assert_equal ids_depr, ids_disabled
   end
@@ -196,10 +196,10 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "order: allows valid Array arguments" do
-    ids_expected = Post.order(Arel.sql("author_id, length(title)")).pluck(:id)
+    ids_expected = Post.order(Arel.sql("author_id, len(title)")).pluck(:id)
 
-    ids_depr     = with_unsafe_raw_sql_deprecated { Post.order(["author_id", "length(title)"]).pluck(:id) }
-    ids_disabled = with_unsafe_raw_sql_disabled   { Post.order(["author_id", "length(title)"]).pluck(:id) }
+    ids_depr     = with_unsafe_raw_sql_deprecated { Post.order(["author_id", "len(title)"]).pluck(:id) }
+    ids_disabled = with_unsafe_raw_sql_disabled   { Post.order(["author_id", "len(title)"]).pluck(:id) }
 
     assert_equal ids_expected, ids_depr
     assert_equal ids_expected, ids_disabled
@@ -319,8 +319,8 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "pluck: always allows Arel" do
-    values_depr     = with_unsafe_raw_sql_deprecated { Post.includes(:comments).pluck(:title, Arel.sql("length(title)")) }
-    values_disabled = with_unsafe_raw_sql_disabled   { Post.includes(:comments).pluck(:title, Arel.sql("length(title)")) }
+    values_depr     = with_unsafe_raw_sql_deprecated { Post.includes(:comments).pluck(:title, Arel.sql("len(title)")) }
+    values_disabled = with_unsafe_raw_sql_disabled   { Post.includes(:comments).pluck(:title, Arel.sql("len(title)")) }
 
     assert_equal values_depr, values_disabled
   end
