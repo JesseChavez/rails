@@ -350,7 +350,7 @@ class UniquenessValidationTest < ActiveRecord::TestCase
       assert topic2.save
     end
 
-    if current_adapter?(:Mysql2Adapter)
+    if current_adapter?(:Mysql2Adapter, :MSSQLAdapter)
       assert_equal 2, Topic.where(author_email_address: "david@loudthinking.com").count
       assert_equal 2, Topic.where(author_email_address: "David@loudthinking.com").count
     else
