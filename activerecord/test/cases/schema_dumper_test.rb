@@ -176,7 +176,11 @@ class SchemaDumperTest < ActiveRecord::TestCase
   def test_schema_dumps_partial_indices
     index_definition = dump_table_schema("companies").split(/\n/).grep(/t\.index.*company_partial_index/).first.strip
     if ActiveRecord::Base.connection.supports_partial_index?
-      assert_equal 't.index ["firm_id", "type"], name: "company_partial_index", where: "(rating > 10)"', index_definition
+      if current_adapter?(:MSSQLAdapter)
+        assert_equal 't.index ["firm_id", "type"], name: "company_partial_index", where: "([rating]>(10))"', index_definition
+      else
+        assert_equal 't.index ["firm_id", "type"], name: "company_partial_index", where: "(rating > 10)"', index_definition
+      end
     else
       assert_equal 't.index ["firm_id", "type"], name: "company_partial_index"', index_definition
     end
