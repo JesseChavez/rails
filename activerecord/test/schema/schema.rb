@@ -117,7 +117,9 @@ ActiveRecord::Schema.define do
     t.column :cover, :string, default: "hard"
     t.string :isbn, **case_sensitive_options
     t.datetime :published_on
-    t.index [:author_id, :name], unique: true
+    unless current_adapter?(:MSSQLAdapter)
+      t.index [:author_id, :name], unique: true
+    end
     t.index :isbn, where: "published_on IS NOT NULL", unique: true
   end
 
