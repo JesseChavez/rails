@@ -26,7 +26,7 @@ require "models/category"
 require "models/categorization"
 require "models/edge"
 require "models/subscriber"
-
+# require 'pry'
 class RelationTest < ActiveRecord::TestCase
   fixtures :authors, :author_addresses, :topics, :entrants, :developers, :people, :companies, :developers_projects, :accounts, :categories, :categorizations, :categories_posts, :posts, :comments, :tags, :taggings, :cars, :minivans
 
@@ -244,7 +244,7 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_finding_with_subquery_with_eager_loading_in_from
-    relation = Comment.includes(:post).where("posts.type": "Post").order(:id)
+    relation = Comment.includes(:post).where("posts.type": "Post") #.order(:id)
     assert_equal relation.to_a, Comment.select("*").from(relation).to_a
     assert_equal relation.to_a, Comment.select("subquery.*").from(relation).to_a
     assert_equal relation.to_a, Comment.select("a.*").from(relation, :a).to_a

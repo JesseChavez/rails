@@ -45,7 +45,7 @@ if subsecond_precision_supported?
       assert_equal 123456000, foo.finish.nsec
     end
 
-    unless current_adapter?(:Mysql2Adapter)
+    unless current_adapter?(:Mysql2Adapter, :MSSQLAdapter)
       def test_no_time_precision_isnt_truncated_on_assignment
         @connection.create_table(:foos, force: true)
         @connection.add_column :foos, :start,  :time
