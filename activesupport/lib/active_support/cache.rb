@@ -52,12 +52,13 @@ module ActiveSupport
       #
       #   ActiveSupport::Cache.lookup_store(MyOwnCacheStore.new)
       #   # => returns MyOwnCacheStore.new
-      def lookup_store(*store_args, **store_options)
-        store, *parameters = *Array.wrap(store_args).flatten
-
+      def lookup_store(store = nil, *parameters)
         case store
         when Symbol
-          retrieve_store_class(store).new(*parameters, **store_options)
+          options = parameters.extract_options!
+          retrieve_store_class(store).new(*parameters, **options)
+        when Array
+          lookup_store(*store)
         when nil
           ActiveSupport::Cache::MemoryStore.new
         else
@@ -311,7 +312,7 @@ module ActiveSupport
       #     :bar
       #   end
       #   cache.fetch('foo') # => "bar"
-      def fetch(name, options = nil)
+      def fetch(name, options = nil, &block)
         if block_given?
           options = merged_options(options)
           key = normalize_key(name, options)
@@ -326,9 +327,9 @@ module ActiveSupport
           end
 
           if entry
-            get_entry_value(entry, name, **options)
+            get_entry_value(entry, name, options)
           else
-            save_block_result_to_cache(name, **options) { |_name| yield _name }
+            save_block_result_to_cache(name, options, &block)
           end
         elsif options && options[:force]
           raise ArgumentError, "Missing block: Calling `Cache#fetch` with `force: true` requires a block."
@@ -447,7 +448,7 @@ module ActiveSupport
           payload[:hits] = reads.keys
           payload[:super_operation] = :fetch_multi
 
-          write_multi(writes, **options)
+          write_multi(writes, options)
 
           ordered
         end
@@ -711,7 +712,7 @@ module ActiveSupport
           entry.value
         end
 
-        def save_block_result_to_cache(name, **options)
+        def save_block_result_to_cache(name, options)
           result = instrument(:generate, name, options) do
             yield(name)
           end

@@ -55,13 +55,13 @@ module ActiveRecord
         def add_foreign_key(from_table, to_table, **options)
           alter_table(from_table) do |definition|
             to_table = strip_table_name_prefix_and_suffix(to_table)
-            definition.foreign_key(to_table, options)
+            definition.foreign_key(to_table, **options)
           end
         end
 
         def remove_foreign_key(from_table, to_table = nil, **options)
           to_table ||= options[:to_table]
-          options = options.except(:name, :to_table)
+          options = options.except(:name, :to_table, :validate)
           foreign_keys = foreign_keys(from_table)
 
           fkey = foreign_keys.detect do |fk|
@@ -87,8 +87,8 @@ module ActiveRecord
             SQLite3::SchemaCreation.new(self)
           end
 
-          def create_table_definition(*args)
-            SQLite3::TableDefinition.new(self, *args)
+          def create_table_definition(*args, **options)
+            SQLite3::TableDefinition.new(self, *args, **options)
           end
 
           def new_column_from_field(table_name, field)

@@ -64,6 +64,11 @@ class NamedScopingTest < ActiveRecord::TestCase
     assert_equal klazz.to.since.to_a, klazz.since.to.to_a
   end
 
+  def test_define_scope_for_reserved_words
+    assert Topic.true.all?(&:approved?), "all objects should be approved"
+    assert Topic.false.none?(&:approved?), "all objects should not be approved"
+  end
+
   def test_scope_should_respond_to_own_methods_and_methods_of_the_proxy
     assert_respond_to Topic.approved, :limit
     assert_respond_to Topic.approved, :count
@@ -111,6 +116,18 @@ class NamedScopingTest < ActiveRecord::TestCase
     objects = Topic.with_object
     assert_operator objects.length, :>, 0
     assert objects.all?(&:approved?), "all objects should be approved"
+  end
+
+  def test_scope_with_kwargs
+    # Explicit true
+    topics = Topic.with_kwargs(approved: true)
+    assert_operator topics.length, :>, 0
+    assert topics.all?(&:approved?), "all objects should be approved"
+
+    # No arguments
+    topics = Topic.with_kwargs()
+    assert_operator topics.length, :>, 0
+    assert topics.none?(&:approved?), "all objects should not be approved"
   end
 
   def test_has_many_associations_have_access_to_scopes

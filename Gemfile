@@ -10,7 +10,7 @@ gemspec
 gem "rake", ">= 11.1"
 
 gem "capybara", ">= 2.15"
-gem "selenium-webdriver", ">= 3.141.592"
+gem "selenium-webdriver", ">= 4.0.0.alpha7"
 
 gem "rack-cache", "~> 1.2"
 gem "sass-rails"
@@ -33,20 +33,22 @@ gem "rubocop-performance", require: false
 gem "rubocop-rails", require: false
 
 group :doc do
-  gem "sdoc", "~> 1.0"
+  gem "sdoc", "~> 1.1"
   gem "redcarpet", "~> 3.2.3", platforms: :ruby
-  gem "w3c_validators"
+  gem "w3c_validators", "~> 1.3.6"
   gem "kindlerb", "~> 1.2.0"
 end
 
 # Active Support
 gem "dalli"
-gem "listen", ">= 3.0.5", "< 3.2", require: false
+gem "listen", "~> 3.2", require: false, github: "guard/listen"
 gem "libxml-ruby", platforms: :ruby
 gem "connection_pool", require: false
+gem "rexml", require: false
 
-# for railties app_generator_test
+# for railties
 gem "bootsnap", ">= 1.4.2", require: false
+gem "webrick", require: false
 
 # Active Job
 group :job do
@@ -70,7 +72,7 @@ group :cable do
   gem "hiredis", require: false
   gem "redis", "~> 4.0", require: false
 
-  gem "redis-namespace"
+  gem "redis-namespace", github: "resque/redis-namespace"
 
   gem "websocket-client-simple", github: "matthewd/websocket-client-simple", branch: "close-race", require: false
 

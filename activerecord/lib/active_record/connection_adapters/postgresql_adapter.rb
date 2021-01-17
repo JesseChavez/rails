@@ -156,6 +156,10 @@ module ActiveRecord
         true
       end
 
+      def supports_partitioned_indexes?
+        database_version >= 110_000
+      end
+
       def supports_partial_index?
         true
       end
@@ -629,7 +633,7 @@ module ActiveRecord
           SQL
 
           if oids
-            query += "WHERE t.oid::integer IN (%s)" % oids.join(", ")
+            query += "WHERE t.oid IN (%s)" % oids.join(", ")
           else
             query += initializer.query_conditions_for_initial_load
           end

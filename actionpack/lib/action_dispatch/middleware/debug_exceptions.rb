@@ -63,8 +63,8 @@ module ActionDispatch
         if request.get_header("action_dispatch.show_detailed_exceptions")
           begin
             content_type = request.formats.first
-          rescue Mime::Type::InvalidMimeType
-            render_for_api_request(Mime[:text], wrapper)
+          rescue ActionDispatch::Http::MimeNegotiation::InvalidType
+            content_type = Mime[:text]
           end
 
           if api_request?(content_type)
@@ -136,6 +136,7 @@ module ActionDispatch
 
       def log_error(request, wrapper)
         logger = logger(request)
+
         return unless logger
 
         exception = wrapper.exception
@@ -156,10 +157,14 @@ module ActionDispatch
       end
 
       def log_array(logger, array)
+        lines = Array(array)
+
+        return if lines.empty?
+
         if logger.formatter && logger.formatter.respond_to?(:tags_text)
-          logger.fatal array.join("\n#{logger.formatter.tags_text}")
+          logger.fatal lines.join("\n#{logger.formatter.tags_text}")
         else
-          logger.fatal array.join("\n")
+          logger.fatal lines.join("\n")
         end
       end
 

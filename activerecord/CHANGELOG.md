@@ -1,3 +1,134 @@
+*   Only warn about negative enums if a positive form that would cause conflicts exists.
+
+    Fixes #39065.
+
+    *Alex Ghiculescu*
+
+*   Allow the inverse of a `has_one` association that was previously autosaved to be loaded.
+
+    Fixes #34255.
+
+    *Steven Weber*
+
+*   Reset statement cache for association if `table_name` is changed.
+
+    Fixes #36453.
+
+    *Ryuta Kamizono*
+
+*   Prevent collection associations from being autosaved multiple times.
+
+    Fixes #39173.
+
+    *Eugene Kenny*
+
+*   Resolve issue with insert_all unique_by option when used with expression index.
+
+    When the `:unique_by` option of `ActiveRecord::Persistence.insert_all` and
+    `ActiveRecord::Persistence.upsert_all` was used with the name of an expression index, an error
+    was raised. Adding a guard around the formatting behavior for the `:unique_by` corrects this.
+
+    Usage:
+
+    ```ruby
+    create_table :books, id: :integer, force: true do |t|
+      t.column :name, :string
+      t.index "lower(name)", unique: true
+    end
+
+    Book.insert_all [{ name: "MyTest" }], unique_by: :index_books_on_lower_name
+    ```
+
+    Fixes #39516.
+
+    *Austen Madden*
+
+*   Resolve conflict between counter cache and optimistic locking.
+
+    Bump an Active Record instance's lock version after updating its counter
+    cache. This avoids raising an unnecessary `ActiveRecord::StaleObjectError`
+    upon subsequent transactions by maintaining parity with the corresponding
+    database record's `lock_version` column.
+
+    Fixes #16449.
+
+    *Aaron Lipman*
+
+*   Fix index creation to preserve index comment in bulk change table on MySQL.
+
+    *Ryuta Kamizono*
+
+
+## Rails 6.0.3.4 (October 07, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.3 (September 09, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.2 (June 17, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.1 (May 18, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3 (May 06, 2020) ##
+
+*   Recommend applications don't use the `database` kwarg in `connected_to`
+
+    The database kwarg in `connected_to` was meant to be used for one-off scripts but is often used in requests. This is really dangerous because it re-establishes a connection every time. It's deprecated in 6.1 and will be removed in 6.2 without replacement. This change soft deprecates it in 6.0 by removing documentation.
+
+    *Eileen M. Uchitelle*
+
+*   Fix support for PostgreSQL 11+ partitioned indexes.
+
+    *Sebastián Palma*
+
+*   Add support for beginless ranges, introduced in Ruby 2.7.
+
+    *Josh Goodall*
+
+*   Fix insert_all with enum values
+
+    Fixes #38716.
+
+    *Joel Blum*
+
+*   Regexp-escape table name for MS SQL
+
+    Add `Regexp.escape` to one method in ActiveRecord, so that table names with regular expression characters in them work as expected. Since MS SQL Server uses "[" and "]" to quote table and column names, and those characters are regular expression characters, methods like `pluck` and `select` fail in certain cases when used with the MS SQL Server adapter.
+
+    *Larry Reid*
+
+*   Store advisory locks on their own named connection.
+
+    Previously advisory locks were taken out against a connection when a migration started. This works fine in single database applications but doesn't work well when migrations need to open new connections which results in the lock getting dropped.
+
+    In order to fix this we are storing the advisory lock on a new connection with the connection specification name `AdisoryLockBase`. The caveat is that we need to maintain at least 2 connections to a database while migrations are running in order to do this.
+
+    *Eileen M. Uchitelle*, *John Crepezzi*
+
+*   Ensure `:reading` connections always raise if a write is attempted.
+
+    Now Rails will raise an `ActiveRecord::ReadOnlyError` if any connection on the reading handler attempts to make a write. If your reading role needs to write you should name the role something other than `:reading`.
+
+    *Eileen M. Uchitelle*
+
+*   Enforce fresh ETag header after a collection's contents change by adding
+    ActiveRecord::Relation#cache_key_with_version. This method will be used by
+    ActionController::ConditionalGet to ensure that when collection cache versioning
+    is enabled, requests using ConditionalGet don't return the same ETag header
+    after a collection is modified. Fixes #38078.
+
+    *Aaron Lipman*
+
 *   A database URL can now contain a querystring value that contains an equal sign. This is needed to support passing PostgresSQL `options`.
 
      *Joshua Flanagan*
@@ -7,6 +138,11 @@
     Resolves #34889.
 
     *Patrick Rebsch*
+
+
+## Rails 6.0.2.2 (March 19, 2020) ##
+
+*   No changes.
 
 
 ## Rails 6.0.2.1 (December 18, 2019) ##

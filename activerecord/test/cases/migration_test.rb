@@ -705,6 +705,17 @@ class MigrationTest < ActiveRecord::TestCase
         "without an advisory lock, the Migrator should not make any changes, but it did."
     end
 
+    def test_with_advisory_lock_doesnt_release_closed_connections
+      migration = Class.new(ActiveRecord::Migration::Current).new
+      migrator = ActiveRecord::Migrator.new(:up, [migration], @schema_migration, 100)
+
+      silence_stream($stderr) do
+        migrator.send(:with_advisory_lock) do
+          ActiveRecord::Base.establish_connection :arunit
+        end
+      end
+    end
+
     def test_with_advisory_lock_raises_the_right_error_when_it_fails_to_release_lock
       migration = Class.new(ActiveRecord::Migration::Current).new
       migrator = ActiveRecord::Migrator.new(:up, [migration], @schema_migration, 100)
@@ -713,7 +724,7 @@ class MigrationTest < ActiveRecord::TestCase
       e = assert_raises(ActiveRecord::ConcurrentMigrationError) do
         silence_stream($stderr) do
           migrator.send(:with_advisory_lock) do
-            ActiveRecord::Base.connection.release_advisory_lock(lock_id)
+            ActiveRecord::AdvisoryLockBase.connection.release_advisory_lock(lock_id)
           end
         end
       end
@@ -856,7 +867,7 @@ if ActiveRecord::Base.connection.supports_bulk_alter?
       classname = ActiveRecord::Base.connection.class.name[/[^:]*$/]
       expected_query_count = {
         "Mysql2Adapter"     => 3, # Adding an index fires a query every time to check if an index already exists or not
-        "PostgreSQLAdapter" => 2,
+        "PostgreSQLAdapter" => 3,
       }.fetch(classname) {
         raise "need an expected query count for #{classname}"
       }
@@ -864,7 +875,7 @@ if ActiveRecord::Base.connection.supports_bulk_alter?
       assert_queries(expected_query_count) do
         with_bulk_change_table do |t|
           t.index :username, unique: true, name: :awesome_username_index
-          t.index [:name, :age]
+          t.index [:name, :age], comment: "This is a comment"
         end
       end
 
@@ -872,6 +883,7 @@ if ActiveRecord::Base.connection.supports_bulk_alter?
 
       name_age_index = index(:index_delete_me_on_name_and_age)
       assert_equal ["name", "age"].sort, name_age_index.columns.sort
+      assert_equal "This is a comment", name_age_index.comment
       assert_not name_age_index.unique
 
       assert index(:awesome_username_index).unique

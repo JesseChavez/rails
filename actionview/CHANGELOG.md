@@ -1,3 +1,54 @@
+*   SanitizeHelper.sanitized_allowed_attributes and SanitizeHelper.sanitized_allowed_tags
+    call safe_list_sanitizer's class method
+
+    Fixes #39586
+
+    *Taufiq Muhammadi*
+
+
+## Rails 6.0.3.4 (October 07, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.3 (September 09, 2020) ##
+
+*   [CVE-2020-8185] Fix potential XSS vulnerability in the `translate`/`t` helper.
+
+    *Jonathan Hefner*
+
+
+## Rails 6.0.3.2 (June 17, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.1 (May 18, 2020) ##
+
+*   [CVE-2020-8167] Check that request is same-origin prior to including CSRF token in XHRs
+
+
+## Rails 6.0.3 (May 06, 2020) ##
+
+*   annotated_source_code returns an empty array so TemplateErrors without a
+    template in the backtrace are surfaced properly by DebugExceptions.
+
+    *Guilherme Mansur*, *Kasper Timm Hansen*
+
+*   Add autoload for SyntaxErrorInTemplate so syntax errors are correctly raised by DebugExceptions.
+
+    *Guilherme Mansur*, *Gannon McGibbon*
+
+
+## Rails 6.0.2.2 (March 19, 2020) ##
+
+*   Fix possible XSS vector in escape_javascript helper
+
+    CVE-2020-5267
+
+    *Aaron Patterson*
+
+
 ## Rails 6.0.2.1 (December 18, 2019) ##
 
 *   No changes.

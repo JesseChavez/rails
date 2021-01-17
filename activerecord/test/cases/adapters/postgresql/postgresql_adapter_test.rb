@@ -301,12 +301,13 @@ module ActiveRecord
       end
 
       def test_columns_for_distinct_with_arel_order
-        order = Object.new
-        def order.to_sql
-          "posts.created_at desc"
-        end
+        Arel::Table.engine = nil # should not rely on the global Arel::Table.engine
+
+        order = Arel.sql("posts.created_at").desc
         assert_equal "posts.created_at AS alias_0, posts.id",
           @connection.columns_for_distinct("posts.id", [order])
+      ensure
+        Arel::Table.engine = ActiveRecord::Base
       end
 
       def test_columns_for_distinct_with_nulls
@@ -452,7 +453,20 @@ module ActiveRecord
           @connection.execute("INSERT INTO ex (data) VALUES ('138853948594')")
 
           @connection_handler.while_preventing_writes do
-            assert_equal 1, @connection.execute("(\n( SELECT * FROM ex WHERE data = '138853948594' ) )").entries.count
+            assert_equal 1, @connection.execute("/*action:index*/(\n( SELECT * FROM ex WHERE data = '138853948594' ) )").entries.count
+          end
+        end
+      end
+
+      def test_doesnt_error_when_a_read_query_with_cursors_is_called_while_preventing_writes
+        with_example_table do
+          @connection_handler.while_preventing_writes do
+            @connection.transaction do
+              assert_equal [], @connection.execute("DECLARE cur_ex CURSOR FOR SELECT * FROM ex").entries
+              assert_equal [], @connection.execute("FETCH cur_ex").entries
+              assert_equal [], @connection.execute("MOVE cur_ex").entries
+              assert_equal [], @connection.execute("CLOSE cur_ex").entries
+            end
           end
         end
       end

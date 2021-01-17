@@ -286,6 +286,21 @@ class ActiveStorage::OneAttachedTest < ActiveSupport::TestCase
     assert_equal 2736, @user.avatar.metadata[:height]
   end
 
+  test "creating an attachment as part of an autosave association through nested attributes" do
+    group = Group.create!(users_attributes: [{ name: "John", avatar: { io: StringIO.new("STUFF"), filename: "town.jpg", content_type: "image/jpg" } }])
+    group.save!
+    new_user = User.find_by(name: "John")
+    assert new_user.avatar.attached?
+  end
+
+  test "updating an attachment as part of an autosave association" do
+    group = Group.create!(users: [@user])
+    @user.avatar = fixture_file_upload("racecar.jpg")
+    group.save!
+    @user.reload
+    assert @user.avatar.attached?
+  end
+
   test "attaching an existing blob to a new record" do
     User.new(name: "Jason").tap do |user|
       user.avatar.attach create_blob(filename: "funky.jpg")
@@ -486,6 +501,20 @@ class ActiveStorage::OneAttachedTest < ActiveSupport::TestCase
         @user.destroy!
       end
     end
+  end
+
+  test "duped record does not share attachments" do
+    @user.avatar.attach create_blob(filename: "funky.jpg")
+
+    assert_not_equal @user.avatar.attachment, @user.dup.avatar.attachment
+  end
+
+  test "duped record does not share attachment changes" do
+    @user.avatar.attach create_blob(filename: "funky.jpg")
+    assert_not_predicate @user, :changed_for_autosave?
+
+    @user.dup.avatar.attach create_blob(filename: "town.jpg")
+    assert_not_predicate @user, :changed_for_autosave?
   end
 
   test "clearing change on reload" do

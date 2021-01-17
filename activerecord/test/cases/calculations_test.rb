@@ -114,10 +114,39 @@ class CalculationsTest < ActiveRecord::TestCase
   end
 
   def test_should_group_by_summed_field
-    c = Account.group(:firm_id).sum(:credit_limit)
-    assert_equal 50,   c[1]
-    assert_equal 105,  c[6]
-    assert_equal 60,   c[2]
+    expected = { nil => 50, 1 => 50, 2 => 60, 6 => 105, 9 => 53 }
+    assert_equal expected, Account.group(:firm_id).sum(:credit_limit)
+  end
+
+  def test_group_by_multiple_same_field
+    accounts = Account.group(:firm_id)
+
+    expected = {
+      nil => 50,
+      1 => 50,
+      2 => 60,
+      6 => 105,
+      9 => 53
+    }
+    assert_equal expected, accounts.sum(:credit_limit)
+
+    expected = {
+      [nil, nil] => 50,
+      [1, 1] => 50,
+      [2, 2] => 60,
+      [6, 6] => 55,
+      [9, 9] => 53
+    }
+    assert_equal expected, accounts.merge!(accounts).maximum(:credit_limit)
+
+    expected = {
+      [nil, nil, nil, nil] => 50,
+      [1, 1, 1, 1] => 50,
+      [2, 2, 2, 2] => 60,
+      [6, 6, 6, 6] => 50,
+      [9, 9, 9, 9] => 53
+    }
+    assert_equal expected, accounts.merge!(accounts).minimum(:credit_limit)
   end
 
   def test_should_generate_valid_sql_with_joins_and_group
@@ -778,7 +807,7 @@ class CalculationsTest < ActiveRecord::TestCase
   end
 
   def test_pluck_with_join
-    assert_equal [[2, 2], [4, 4]], Reply.includes(:topic).pluck(:id, :"topics.id")
+    assert_equal [[2, 2], [4, 4]], Reply.includes(:topic).order(:id).pluck(:id, :"topics.id")
   end
 
   def test_group_by_with_order_by_virtual_count_attribute
@@ -788,20 +817,20 @@ class CalculationsTest < ActiveRecord::TestCase
   end if current_adapter?(:PostgreSQLAdapter)
 
   def test_group_by_with_limit
-    expected = { "Post" => 8, "SpecialPost" => 1 }
-    actual = Post.includes(:comments).group(:type).order(:type).limit(2).count("comments.id")
+    expected = { "StiPost" => 2, "SpecialPost" => 1 }
+    actual = Post.includes(:comments).group(:type).order(type: :desc).limit(2).count("comments.id")
     assert_equal expected, actual
   end
 
   def test_group_by_with_offset
-    expected = { "SpecialPost" => 1, "StiPost" => 2 }
-    actual = Post.includes(:comments).group(:type).order(:type).offset(1).count("comments.id")
+    expected = { "SpecialPost" => 1, "Post" => 8 }
+    actual = Post.includes(:comments).group(:type).order(type: :desc).offset(1).count("comments.id")
     assert_equal expected, actual
   end
 
   def test_group_by_with_limit_and_offset
     expected = { "SpecialPost" => 1 }
-    actual = Post.includes(:comments).group(:type).order(:type).offset(1).limit(1).count("comments.id")
+    actual = Post.includes(:comments).group(:type).order(type: :desc).offset(1).limit(1).count("comments.id")
     assert_equal expected, actual
   end
 
@@ -834,7 +863,7 @@ class CalculationsTest < ActiveRecord::TestCase
 
   def test_pluck_with_multiple_columns_and_selection_clause
     assert_equal [[1, 50], [2, 50], [3, 50], [4, 60], [5, 55], [6, 53]],
-      Account.pluck("id, credit_limit")
+      Account.order(:id).pluck("id, credit_limit")
   end
 
   def test_pluck_with_multiple_columns_and_includes
@@ -860,7 +889,7 @@ class CalculationsTest < ActiveRecord::TestCase
 
   def test_pluck_columns_with_same_name
     expected = [["The First Topic", "The Second Topic of the day"], ["The Third Topic of the day", "The Fourth Topic of the day"]]
-    actual = Topic.joins(:replies)
+    actual = Topic.joins(:replies).order(:id)
       .pluck("topics.title", "replies_topics.title")
     assert_equal expected, actual
   end

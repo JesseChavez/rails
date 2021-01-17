@@ -385,6 +385,15 @@ module ActiveRecord
     end
     private :compute_cache_version
 
+    # Returns a cache key along with the version.
+    def cache_key_with_version
+      if version = cache_version
+        "#{cache_key}-#{version}"
+      else
+        cache_key
+      end
+    end
+
     # Scope all queries to the current scope.
     #
     #   Comment.where(post_id: 1).scoping do
@@ -479,15 +488,17 @@ module ActiveRecord
 
       if touch
         names = touch if touch != true
-        touch_updates = klass.touch_attributes_with_time(*names)
+        names = Array.wrap(names)
+        options = names.extract_options!
+        touch_updates = klass.touch_attributes_with_time(*names, **options)
         updates.merge!(touch_updates) unless touch_updates.empty?
       end
 
       update_all updates
     end
 
-    # Touches all records in the current relation without instantiating records first with the +updated_at+/+updated_on+ attributes
-    # set to the current time or the time specified.
+    # Touches all records in the current relation, setting the +updated_at+/+updated_on+ attributes to the current time or the time specified.
+    # It does not instantiate the involved models, and it does not trigger Active Record callbacks or validations.
     # This method can be passed attribute names and an optional time argument.
     # If attribute names are passed, they are updated along with +updated_at+/+updated_on+ attributes.
     # If no time argument is passed, the current time is used as default.
@@ -660,7 +671,10 @@ module ActiveRecord
     end
 
     def scope_for_create
-      where_values_hash.merge!(create_with_value.stringify_keys)
+      hash = where_values_hash
+      hash.delete(klass.inheritance_column) if klass.finder_needs_type_condition?
+      create_with_value.each { |k, v| hash[k.to_s] = v } unless create_with_value.empty?
+      hash
     end
 
     # Returns true if relation needs eager loading.

@@ -1,3 +1,32 @@
+*   Signed and encrypted cookies can now store `false` as their value when
+    `action_dispatch.use_cookies_with_metadata` is enabled.
+
+    *Rolandas Barysas*
+
+
+## Rails 6.0.3.4 (October 07, 2020) ##
+
+*   [CVE-2020-8264] Prevent XSS in Actionable Exceptions
+
+
+## Rails 6.0.3.3 (September 09, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.2 (June 17, 2020) ##
+
+*   [CVE-2020-8185] Only allow ActionableErrors if show_detailed_exceptions is enabled
+
+## Rails 6.0.3.1 (May 18, 2020) ##
+
+*   [CVE-2020-8166] HMAC raw CSRF token before masking it, so it cannot be used to reconstruct a per-form token
+
+*   [CVE-2020-8164] Return self when calling #each, #each_pair, and #each_value instead of the raw @parameters hash
+
+
+## Rails 6.0.3 (May 06, 2020) ##
+
 *   Include child session assertion count in ActionDispatch::IntegrationTest
 
     `IntegrationTest#open_session` uses `dup` to create the new session, which
@@ -10,6 +39,11 @@
     Fixes #32142
 
     *Sam Bostock*
+
+
+## Rails 6.0.2.2 (March 19, 2020) ##
+
+*   No changes.
 
 
 ## Rails 6.0.2.1 (December 18, 2019) ##

@@ -112,6 +112,8 @@ numbers. It also filters out sensitive values of database columns when call `#in
 
 * `config.force_ssl` forces all requests to be served over HTTPS by using the `ActionDispatch::SSL` middleware, and sets `config.action_mailer.default_url_options` to be `{ protocol: 'https' }`. This can be configured by setting `config.ssl_options` - see the [ActionDispatch::SSL documentation](https://api.rubyonrails.org/classes/ActionDispatch/SSL.html) for details.
 
+* `config.javascript_path` sets the path where your app's JavaScript lives relative to the `app` directory. The default is `javascript`, used by [webpacker](https://github.com/rails/webpacker). An app's configured `javascript_path` will be excluded from `autoload_paths`.
+
 * `config.log_formatter` defines the formatter of the Rails logger. This option defaults to an instance of `ActiveSupport::Logger::SimpleFormatter` for all modes. If you are setting a value for `config.logger` you must manually pass the value of your formatter to your logger before it is wrapped in an `ActiveSupport::TaggedLogging` instance, Rails will not do it for you.
 
 * `config.log_level` defines the verbosity of the Rails logger. This option
@@ -229,6 +231,48 @@ The full set of methods that can be used in this block are as follows:
 ### Configuring Middleware
 
 Every Rails application comes with a standard set of middleware which it uses in this order in the development environment:
+
+* `ActionDispatch::HostAuthorization` prevents against DNS rebinding and other `Host` header attacks.
+   It is included in the development environment by default with the following configuration:
+
+   ```ruby
+   Rails.application.config.hosts = [
+     IPAddr.new("0.0.0.0/0"), # All IPv4 addresses.
+     IPAddr.new("::/0"),      # All IPv6 addresses.
+     "localhost"              # The localhost reserved domain.
+   ]
+   ```
+
+   In other environments `Rails.application.config.hosts` is empty and no
+   `Host` header checks will be done. If you want to guard against header
+   attacks on production, you have to manually permit the allowed hosts
+   with:
+
+   ```ruby
+   Rails.application.config.hosts << "product.com"
+   ```
+
+   The host of a request is checked against the `hosts` entries with the case
+   operator (`#===`), which lets `hosts` support entries of type `Regexp`,
+   `Proc` and `IPAddr` to name a few. Here is an example with a regexp.
+
+   ```ruby
+   # Allow requests from subdomains like `www.product.com` and
+   # `beta1.product.com`.
+   Rails.application.config.hosts << /.*\.product\.com/
+   ```
+   
+   The provided regexp will be wrapped with both anchors (`\A` and `\z`) so it
+   must match the entire hostname. `/product.com/`, for example, once anchored,
+   would fail to match `www.product.com`.
+
+   A special case is supported that allows you to permit all sub-domains:
+
+   ```ruby
+   # Allow requests from subdomains like `www.product.com` and
+   # `beta1.product.com`.
+   Rails.application.config.hosts << ".product.com"
+   ```
 
 * `ActionDispatch::SSL` forces every request to be served using HTTPS. Enabled if `config.force_ssl` is set to `true`. Options passed to this can be configured by setting `config.ssl_options`.
 * `ActionDispatch::Static` is used to serve static assets. Disabled if `config.public_file_server.enabled` is `false`. Set `config.public_file_server.index_name` if you need to serve a static directory index file that is not named `index`. For example, to serve `main.html` instead of `index.html` for directory requests, set `config.public_file_server.index_name` to `"main"`.
@@ -1553,7 +1597,7 @@ evented file system monitor to detect changes when `config.cache_classes` is
 
 ```ruby
 group :development do
-  gem 'listen', '>= 3.0.5', '< 3.2'
+  gem 'listen', '~> 3.2'
 end
 ```
 

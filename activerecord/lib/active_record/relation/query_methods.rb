@@ -51,7 +51,7 @@ module ActiveRecord
         if not_behaves_as_nor?(opts)
           ActiveSupport::Deprecation.warn(<<~MSG.squish)
             NOT conditions will no longer behave as NOR in Rails 6.1.
-            To continue using NOR conditions, NOT each conditions manually
+            To continue using NOR conditions, NOT each condition individually
             (`#{
               opts.flat_map { |key, value|
                 if value.is_a?(Hash) && value.size > 1
@@ -168,7 +168,7 @@ module ActiveRecord
     end
 
     def eager_load!(*args) # :nodoc:
-      self.eager_load_values += args
+      self.eager_load_values |= args
       self
     end
 
@@ -182,7 +182,7 @@ module ActiveRecord
     end
 
     def preload!(*args) # :nodoc:
-      self.preload_values += args
+      self.preload_values |= args
       self
     end
 
@@ -499,7 +499,7 @@ module ActiveRecord
     def joins!(*args) # :nodoc:
       args.compact!
       args.flatten!
-      self.joins_values += args
+      self.joins_values |= args
       self
     end
 
@@ -517,7 +517,7 @@ module ActiveRecord
     def left_outer_joins!(*args) # :nodoc:
       args.compact!
       args.flatten!
-      self.left_outer_joins_values += args
+      self.left_outer_joins_values |= args
       self
     end
 
@@ -1094,12 +1094,14 @@ module ActiveRecord
         end
       end
 
-      def select_association_list(associations)
+      def select_association_list(associations, stashed_joins = nil)
         result = []
         associations.each do |association|
           case association
           when Hash, Symbol, Array
             result << association
+          when ActiveRecord::Associations::JoinDependency
+            stashed_joins&.<< association
           else
             yield if block_given?
           end
@@ -1107,28 +1109,32 @@ module ActiveRecord
         result
       end
 
-      def valid_association_list(associations)
-        select_association_list(associations) do
+      def valid_association_list(associations, stashed_joins)
+        select_association_list(associations, stashed_joins) do
           raise ArgumentError, "only Hash, Symbol and Array are allowed"
         end
       end
 
       def build_left_outer_joins(manager, outer_joins, aliases)
         buckets = Hash.new { |h, k| h[k] = [] }
-        buckets[:association_join] = valid_association_list(outer_joins)
+        buckets[:association_join] = valid_association_list(outer_joins, buckets[:stashed_join])
         build_join_query(manager, buckets, Arel::Nodes::OuterJoin, aliases)
+      end
+
+      class ::Arel::Nodes::LeadingJoin < Arel::Nodes::InnerJoin # :nodoc:
       end
 
       def build_joins(manager, joins, aliases)
         buckets = Hash.new { |h, k| h[k] = [] }
 
         unless left_outer_joins_values.empty?
-          left_joins = valid_association_list(left_outer_joins_values.flatten)
-          buckets[:stashed_join] << construct_join_dependency(left_joins, Arel::Nodes::OuterJoin)
+          stashed_left_joins = []
+          left_joins = valid_association_list(left_outer_joins_values.flatten, stashed_left_joins)
+          stashed_left_joins.unshift construct_join_dependency(left_joins, Arel::Nodes::OuterJoin)
         end
 
         if joins.last.is_a?(ActiveRecord::Associations::JoinDependency)
-          buckets[:stashed_join] << joins.pop if joins.last.base_klass == klass
+          stashed_eager_load = joins.pop if joins.last.base_klass == klass
         end
 
         joins.map! do |join|
@@ -1141,7 +1147,7 @@ module ActiveRecord
 
         while joins.first.is_a?(Arel::Nodes::Join)
           join_node = joins.shift
-          if join_node.is_a?(Arel::Nodes::StringJoin) && !buckets[:stashed_join].empty?
+          if !join_node.is_a?(Arel::Nodes::LeadingJoin) && (stashed_eager_load || stashed_left_joins)
             buckets[:join_node] << join_node
           else
             buckets[:leading_join] << join_node
@@ -1160,6 +1166,9 @@ module ActiveRecord
             raise "unknown class: %s" % join.class.name
           end
         end
+
+        buckets[:stashed_join].concat stashed_left_joins if stashed_left_joins
+        buckets[:stashed_join] << stashed_eager_load if stashed_eager_load
 
         build_join_query(manager, buckets, Arel::Nodes::InnerJoin, aliases)
       end
@@ -1221,7 +1230,9 @@ module ActiveRecord
       end
 
       def table_name_matches?(from)
-        /(?:\A|(?<!FROM)\s)(?:\b#{table.name}\b|#{connection.quote_table_name(table.name)})(?!\.)/i.match?(from.to_s)
+        table_name = Regexp.escape(table.name)
+        quoted_table_name = Regexp.escape(connection.quote_table_name(table.name))
+        /(?:\A|(?<!FROM)\s)(?:\b#{table_name}\b|#{quoted_table_name})(?!\.)/i.match?(from.to_s)
       end
 
       def reverse_sql_order(order_query)
@@ -1354,12 +1365,15 @@ module ActiveRecord
         end
       end
 
-      STRUCTURAL_OR_METHODS = Relation::VALUE_METHODS - [:extending, :where, :having, :unscope, :references]
+      STRUCTURAL_OR_METHODS = Relation::VALUE_METHODS - [:extending, :where, :having, :unscope, :references, :annotate, :optimizer_hints]
       def structurally_incompatible_values_for_or(other)
         values = other.values
         STRUCTURAL_OR_METHODS.reject do |method|
           default = DEFAULT_VALUES[method]
-          @values.fetch(method, default) == values.fetch(method, default)
+          v1, v2 = @values.fetch(method, default), values.fetch(method, default)
+          v1 = v1.uniq if v1.is_a?(Array)
+          v2 = v2.uniq if v2.is_a?(Array)
+          v1 == v2
         end
       end
 

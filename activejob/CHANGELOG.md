@@ -1,3 +1,40 @@
+## Rails 6.0.3.4 (October 07, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.3 (September 09, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.2 (June 17, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3.1 (May 18, 2020) ##
+
+*   No changes.
+
+
+## Rails 6.0.3 (May 06, 2020) ##
+
+*   While using `perform_enqueued_jobs` test helper enqueued jobs must be stored for the later check with
+    `assert_enqueued_with`.
+
+    *Dmitry Polushkin*
+
+*   Add queue name support to Que adapter
+
+    *Brad Nauta*, *Wojciech Wnętrzak*
+
+
+## Rails 6.0.2.2 (March 19, 2020) ##
+
+*   No changes.
+
+
 ## Rails 6.0.2.1 (December 18, 2019) ##
 
 *   No changes.

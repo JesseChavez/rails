@@ -77,6 +77,7 @@ module ActiveRecord
       include Savepoints
 
       SIMPLE_INT = /\A\d+\z/
+      COMMENT_REGEX = %r{/\*(?:[^\*]|\*[^/])*\*/}m
 
       attr_accessor :pool
       attr_reader :visitor, :owner, :logger, :lock
@@ -102,9 +103,13 @@ module ActiveRecord
         end
       end
 
+      DEFAULT_READ_QUERY = [:begin, :commit, :explain, :release, :rollback, :savepoint, :select, :with] # :nodoc:
+      private_constant :DEFAULT_READ_QUERY
+
       def self.build_read_query_regexp(*parts) # :nodoc:
-        parts = parts.map { |part| /\A[\(\s]*#{part}/i }
-        Regexp.union(*parts)
+        parts += DEFAULT_READ_QUERY
+        parts = parts.map { |part| /#{part}/i }
+        /\A(?:[\(\s]|#{COMMENT_REGEX})*#{Regexp.union(*parts)}/
       end
 
       def self.quoted_column_names # :nodoc:
@@ -166,6 +171,8 @@ module ActiveRecord
                                 conn = self
                                 spec_name = conn.pool.spec.name
                                 name = "#{spec_name}::SchemaMigration"
+
+                                return ActiveRecord::SchemaMigration if spec_name == "primary"
 
                                 Class.new(ActiveRecord::SchemaMigration) do
                                   define_singleton_method(:name) { name }
@@ -309,6 +316,10 @@ module ActiveRecord
       # sequence before the insert statement? If true, next_sequence_value
       # is called before each insert to set the record's primary key.
       def prefetch_primary_key?(table_name = nil)
+        false
+      end
+
+      def supports_partitioned_indexes?
         false
       end
 

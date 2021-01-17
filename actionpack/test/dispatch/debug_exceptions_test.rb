@@ -20,6 +20,12 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
   class Boomer
     attr_accessor :closed
 
+    class NilAnnotedSourceCodeError < StandardError
+      def annoted_source_code
+        nil
+      end
+    end
+
     def initialize(detailed = false)
       @detailed = detailed
       @closed = false
@@ -48,10 +54,14 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
       end
     end
 
+    def method_that_raises_nil_annoted_source_code
+      raise NilAnnotedSourceCodeError, "nil annoted_source_code"
+    end
+
     def call(env)
       env["action_dispatch.show_detailed_exceptions"] = @detailed
       req = ActionDispatch::Request.new(env)
-      template = ActionView::Template.new(File.read(__FILE__), __FILE__, ActionView::Template::Handlers::Raw.new, format: :html, locals: [])
+      template = ActionView::Template.new(File.binread(__FILE__), __FILE__, ActionView::Template::Handlers::Raw.new, format: :html, locals: [])
 
       case req.path
       when "/pass"
@@ -71,7 +81,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
       when "/unprocessable_entity"
         raise ActionController::InvalidAuthenticityToken
       when "/invalid_mimetype"
-        raise Mime::Type::InvalidMimeType
+        raise ActionDispatch::Http::MimeNegotiation::InvalidType
       when "/not_found_original_exception"
         begin
           raise AbstractController::ActionNotFound.new
@@ -106,6 +116,14 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
         raise_nested_exceptions
       when %r{/actionable_error}
         raise CustomActionableError
+      when %r{/nil_annoted_source_code_error}
+        method_that_raises_nil_annoted_source_code
+      when "/utf8_template_error"
+        begin
+          eval "“fancy string”"
+        rescue Exception
+          raise ActionView::Template::Error.new(template)
+        end
       else
         raise "puke!"
       end
@@ -119,6 +137,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
   DevelopmentApp = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp)
   InterceptedApp = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :default, [Interceptor])
   BadInterceptedApp = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :default, [BadInterceptor])
+  ApiApp = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :api)
 
   test "skip diagnosis if not showing detailed exceptions" do
     @app = ProductionApp
@@ -197,7 +216,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
 
     get "/invalid_mimetype", headers: { "Accept" => "text/html,*", "action_dispatch.show_exceptions" => true }
     assert_response 406
-    assert_match(/Mime::Type::InvalidMimeType/, body)
+    assert_match(/ActionDispatch::Http::MimeNegotiation::InvalidType/, body)
   end
 
   test "rescue with text error for xhr request" do
@@ -251,7 +270,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
   end
 
   test "rescue with JSON error for JSON API request" do
-    @app = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :api)
+    @app = ApiApp
 
     get "/", headers: { "action_dispatch.show_exceptions" => true }, as: :json
     assert_response 500
@@ -289,10 +308,16 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
     assert_no_match(/<body>/, body)
     assert_equal "application/json", response.media_type
     assert_match(/ActionController::ParameterMissing/, body)
+
+    get "/invalid_mimetype", headers: { "Accept" => "text/html,*", "action_dispatch.show_exceptions" => true }, as: :json
+    assert_response 406
+    assert_no_match(/<body>/, body)
+    assert_equal "application/json", response.media_type
+    assert_match(/ActionDispatch::Http::MimeNegotiation::InvalidType/, body)
   end
 
   test "rescue with HTML format for HTML API request" do
-    @app = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :api)
+    @app = ApiApp
 
     get "/index.html", headers: { "action_dispatch.show_exceptions" => true }
     assert_response 500
@@ -303,7 +328,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
   end
 
   test "rescue with XML format for XML API requests" do
-    @app = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :api)
+    @app = ApiApp
 
     get "/index.xml", headers: { "action_dispatch.show_exceptions" => true }
     assert_response 500
@@ -317,7 +342,7 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
     ActionDispatch::IntegrationTest.register_encoder(:wibble,
       param_encoder: -> params { params })
 
-    @app = ActionDispatch::DebugExceptions.new(Boomer.new(true), RoutesApp, :api)
+    @app = ApiApp
 
     get "/index", headers: { "action_dispatch.show_exceptions" => true }, as: :wibble
     assert_response 500
@@ -638,5 +663,30 @@ class DebugExceptionsTest < ActionDispatch::IntegrationTest
 
     assert_response 400
     assert_match "ActionController::BadRequest", body
+  end
+
+  test "debug exceptions with misbehaving Exception#annoted_source_code" do
+    @app = DevelopmentApp
+
+    io = StringIO.new
+    logger = ActiveSupport::Logger.new(io)
+
+    get "/nil_annoted_source_code_error", headers: { "action_dispatch.show_exceptions" => true, "action_dispatch.logger" => logger }
+
+    assert_select "header h1", /DebugExceptionsTest::Boomer::NilAnnotedSourceCodeError/
+    assert_select "#container h2", /nil annoted_source_code/
+  end
+
+  test "debug exceptions app shows diagnostics for template errors that contain UTF-8 characters" do
+    @app = DevelopmentApp
+
+    io = StringIO.new
+    logger = ActiveSupport::Logger.new(io)
+
+    get "/utf8_template_error", headers: { "action_dispatch.logger" => logger }
+
+    assert_response 500
+    assert_select "#container p", /Showing #{__FILE__} where line #\d+ raised/
+    assert_select "#container code", /undefined local variable or method `string”'/
   end
 end

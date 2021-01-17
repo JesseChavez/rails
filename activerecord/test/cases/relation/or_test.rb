@@ -110,6 +110,11 @@ module ActiveRecord
       assert_equal expected, Post.order(id: :desc).typographically_interesting
     end
 
+    def test_or_with_sti_relation
+      expected = Post.where("id = 1 or id = 2").sort_by(&:id)
+      assert_equal expected, Post.where(id: 1).or(SpecialPost.all).sort_by(&:id)
+    end
+
     def test_or_on_loaded_relation
       expected = Post.where("id = 1 or id = 2").to_a
       p = Post.where("id = 1")
@@ -136,6 +141,26 @@ module ActiveRecord
       author = Author.first
       assert_nothing_raised do
         author.top_posts.or(author.other_top_posts)
+      end
+    end
+
+    def test_or_with_annotate
+      quoted_posts = Regexp.escape(Post.quoted_table_name)
+      assert_match %r{#{quoted_posts} /\* foo \*/\z}, Post.annotate("foo").or(Post.all).to_sql
+      assert_match %r{#{quoted_posts} /\* foo \*/\z}, Post.annotate("foo").or(Post.annotate("foo")).to_sql
+      assert_match %r{#{quoted_posts} /\* foo \*/\z}, Post.annotate("foo").or(Post.annotate("bar")).to_sql
+      assert_match %r{#{quoted_posts} /\* foo \*/ /\* bar \*/\z}, Post.annotate("foo", "bar").or(Post.annotate("foo")).to_sql
+    end
+
+    def test_structurally_incompatible_values
+      assert_nothing_raised do
+        Post.includes(:author).includes(:author).or(Post.includes(:author))
+        Post.eager_load(:author).eager_load(:author).or(Post.eager_load(:author))
+        Post.preload(:author).preload(:author).or(Post.preload(:author))
+        Post.group(:author_id).group(:author_id).or(Post.group(:author_id))
+        Post.joins(:author).joins(:author).or(Post.joins(:author))
+        Post.left_outer_joins(:author).left_outer_joins(:author).or(Post.left_outer_joins(:author))
+        Post.from("posts").or(Post.from("posts"))
       end
     end
   end

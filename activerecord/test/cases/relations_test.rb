@@ -26,7 +26,7 @@ require "models/category"
 require "models/categorization"
 require "models/edge"
 require "models/subscriber"
-# require 'pry'
+
 class RelationTest < ActiveRecord::TestCase
   fixtures :authors, :author_addresses, :topics, :entrants, :developers, :people, :companies, :developers_projects, :accounts, :categories, :categorizations, :categories_posts, :posts, :comments, :tags, :taggings, :cars, :minivans
 
@@ -93,11 +93,15 @@ class RelationTest < ActiveRecord::TestCase
   def test_loaded_all
     topics = Topic.all
 
+    assert_not_predicate topics, :loaded?
+    assert_not_predicate topics, :loaded
+
     assert_queries(1) do
       2.times { assert_equal 5, topics.to_a.size }
     end
 
     assert_predicate topics, :loaded?
+    assert_predicate topics, :loaded
   end
 
   def test_scoped_first
@@ -244,7 +248,7 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_finding_with_subquery_with_eager_loading_in_from
-    relation = Comment.includes(:post).where("posts.type": "Post") #.order(:id)
+    relation = Comment.includes(:post).where("posts.type": "Post").order(:id)
     assert_equal relation.to_a, Comment.select("*").from(relation).to_a
     assert_equal relation.to_a, Comment.select("subquery.*").from(relation).to_a
     assert_equal relation.to_a, Comment.select("a.*").from(relation, :a).to_a
@@ -298,19 +302,19 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_reverse_order_with_function
-    topics = Topic.order("len(title)").reverse_order
-    assert_equal topics(:second).title, topics.first.title
+    topics = Topic.order("lower(title)").reverse_order
+    assert_equal topics(:third).title, topics.first.title
   end
 
   def test_reverse_arel_assoc_order_with_function
-    topics = Topic.order(Arel.sql("len(title)") => :asc).reverse_order
-    assert_equal topics(:second).title, topics.first.title
+    topics = Topic.order(Arel.sql("lower(title)") => :asc).reverse_order
+    assert_equal topics(:third).title, topics.first.title
   end
 
   def test_reverse_order_with_function_other_predicates
-    topics = Topic.order(Arel.sql("author_name, len(title), id")).reverse_order
+    topics = Topic.order(Arel.sql("author_name, length(title), id")).reverse_order
     assert_equal topics(:second).title, topics.first.title
-    topics = Topic.order(Arel.sql("len(author_name), id, len(title)")).reverse_order
+    topics = Topic.order(Arel.sql("length(author_name), id, length(title)")).reverse_order
     assert_equal topics(:fifth).title, topics.first.title
   end
 
@@ -325,7 +329,7 @@ class RelationTest < ActiveRecord::TestCase
       Topic.order(Arel.sql("concat(author_name, lower(title))")).reverse_order
     end
     assert_raises(ActiveRecord::IrreversibleOrderError) do
-      Topic.order(Arel.sql("concat(lower(author_name), title, len(title)")).reverse_order
+      Topic.order(Arel.sql("concat(lower(author_name), title, length(title)")).reverse_order
     end
   end
 
@@ -1896,7 +1900,7 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   test "relations don't load all records in #inspect" do
-    assert_sql(/LIMIT|ROWNUM <=|FETCH (FIRST|NEXT)/) do
+    assert_sql(/LIMIT|ROWNUM <=|FETCH FIRST/) do
       Post.all.inspect
     end
   end
@@ -2023,6 +2027,18 @@ class RelationTest < ActiveRecord::TestCase
     assert_equal 1, posts.unscope(where: :body).count
   end
 
+  def test_unscope_with_arel_sql
+    posts = Post.where(Arel.sql("'Welcome to the weblog'").eq(Post.arel_attribute(:title)))
+
+    assert_equal 1, posts.count
+    assert_equal Post.count, posts.unscope(where: :title).count
+
+    posts = Post.where(Arel.sql("posts.title").eq("Welcome to the weblog"))
+
+    assert_equal 1, posts.count
+    assert_equal 1, posts.unscope(where: :title).count
+  end
+
   def test_locked_should_not_build_arel
     posts = Post.locked
     assert_predicate posts, :locked?
@@ -2030,7 +2046,7 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_relation_join_method
-    assert_equal "Thank you for the welcome,Thank you again for the welcome", Post.first.comments.join(",")
+    assert_equal "Thank you for the welcome,Thank you again for the welcome", Post.first.comments.order(:id).join(",")
   end
 
   def test_relation_with_private_kernel_method
@@ -2041,6 +2057,8 @@ class RelationTest < ActiveRecord::TestCase
     sub_accounts = SubAccount.all
     assert_equal [accounts(:signals37)], sub_accounts.open
     assert_equal [accounts(:signals37)], sub_accounts.available
+
+    assert_equal [topics(:second)], topics(:first).open_replies
   end
 
   def test_where_with_take_memoization

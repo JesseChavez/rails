@@ -14,14 +14,32 @@ module ActiveSupport
 
     private
       def method_missing(method, *arguments, &block)
+        options = nil
         if arguments.first.is_a?(Proc)
           proc = arguments.pop
           arguments << lambda { |*args| @options.deep_merge(proc.call(*args)) }
+        elsif arguments.last.respond_to?(:to_hash)
+          options = @options.deep_merge(arguments.pop)
         else
-          arguments << (arguments.last.respond_to?(:to_hash) ? @options.deep_merge(arguments.pop) : @options.dup)
+          options = @options
         end
 
-        @context.__send__(method, *arguments, &block)
+        invoke_method(method, arguments, options, &block)
+      end
+
+      if RUBY_VERSION >= "2.7"
+        def invoke_method(method, arguments, options, &block)
+          if options
+            @context.__send__(method, *arguments, **options, &block)
+          else
+            @context.__send__(method, *arguments, &block)
+          end
+        end
+      else
+        def invoke_method(method, arguments, options, &block)
+          arguments << options.dup if options
+          @context.__send__(method, *arguments, &block)
+        end
       end
   end
 end

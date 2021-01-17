@@ -57,8 +57,7 @@ module ActionView
       # that include HTML tags so that you know what kind of output to expect
       # when you call translate in a template and translators know which keys
       # they can provide HTML values for.
-      def translate(key, options = {})
-        options = options.dup
+      def translate(key, **options)
         if options.has_key?(:default)
           remaining_defaults = Array.wrap(options.delete(:default)).compact
           options[:default] = remaining_defaults unless remaining_defaults.first.kind_of?(Symbol)
@@ -77,13 +76,20 @@ module ActionView
 
         if html_safe_translation_key?(key)
           html_safe_options = options.dup
+
           options.except(*I18n::RESERVED_KEYS).each do |name, value|
             unless name == :count && value.is_a?(Numeric)
               html_safe_options[name] = ERB::Util.html_escape(value.to_s)
             end
           end
+
+          html_safe_options[:default] = MISSING_TRANSLATION unless html_safe_options[:default].blank?
+
           translation = I18n.translate(scope_key_by_partial(key), **html_safe_options.merge(raise: i18n_raise))
-          if translation.respond_to?(:map)
+
+          if translation.equal?(MISSING_TRANSLATION)
+            options[:default].first
+          elsif translation.respond_to?(:map)
             translation.map { |element| element.respond_to?(:html_safe) ? element.html_safe : element }
           else
             translation.respond_to?(:html_safe) ? translation.html_safe : translation
@@ -93,7 +99,7 @@ module ActionView
         end
       rescue I18n::MissingTranslationData => e
         if remaining_defaults.present?
-          translate remaining_defaults.shift, options.merge(default: remaining_defaults)
+          translate remaining_defaults.shift, **options.merge(default: remaining_defaults)
         else
           raise e if raise_error
 
@@ -116,12 +122,15 @@ module ActionView
       #
       # See https://www.rubydoc.info/github/svenfuchs/i18n/master/I18n/Backend/Base:localize
       # for more information.
-      def localize(*args)
-        I18n.localize(*args)
+      def localize(object, **options)
+        I18n.localize(object, **options)
       end
       alias :l :localize
 
       private
+        MISSING_TRANSLATION = Object.new
+        private_constant :MISSING_TRANSLATION
+
         def scope_key_by_partial(key)
           stringified_key = key.to_s
           if stringified_key.first == "."

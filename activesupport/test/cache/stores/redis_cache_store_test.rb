@@ -14,9 +14,10 @@ Redis::Connection.drivers.append(driver)
 # Emulates a latency on Redis's back-end for the key latency to facilitate
 # connection pool testing.
 class SlowRedis < Redis
-  def get(key, options = {})
+  def get(key)
     if key =~ /latency/
       sleep 3
+      super
     else
       super
     end
@@ -135,6 +136,14 @@ module ActiveSupport::Cache::RedisCacheStoreTests
     def test_fetch_multi_uses_redis_mget
       assert_called(@cache.redis, :mget, returns: []) do
         @cache.fetch_multi("a", "b", "c") do |key|
+          key * 2
+        end
+      end
+    end
+
+    def test_fetch_multi_with_namespace
+      assert_called_with(@cache.redis, :mget, ["custom-namespace:a", "custom-namespace:b", "custom-namespace:c"], returns: []) do
+        @cache.fetch_multi("a", "b", "c", namespace: "custom-namespace") do |key|
           key * 2
         end
       end
@@ -299,7 +308,7 @@ module ActiveSupport::Cache::RedisCacheStoreTests
       @cache.redis.set("fu", "baz")
       @cache.clear
       assert_not @cache.exist?("foo")
-      assert @cache.redis.exists("fu")
+      assert @cache.redis.exists?("fu")
     end
   end
 end

@@ -54,9 +54,10 @@ class TranslationHelperTest < ActiveSupport::TestCase
 
   def test_delegates_localize_to_i18n
     @time = Time.utc(2008, 7, 8, 12, 18, 38)
-    assert_called_with(I18n, :localize, [@time]) do
-      localize @time
+    assert_called_with(I18n, :localize, [@time, locale: "en"]) do
+      localize @time, locale: "en"
     end
+    assert_equal "Tue, 08 Jul 2008 12:18:38 +0000", localize(@time, locale: "en")
   end
 
   def test_returns_missing_translation_message_without_span_wrap
@@ -216,6 +217,13 @@ class TranslationHelperTest < ActiveSupport::TestCase
     assert_equal false, translation.html_safe?
   end
 
+  def test_translate_does_not_mark_unsourced_string_default_as_html_safe
+    untrusted_string = "<script>alert()</script>"
+    translation = translate(:"translations.missing", default: [:"translations.missing_html", untrusted_string])
+    assert_equal untrusted_string, translation
+    assert_not_predicate translation, :html_safe?
+  end
+
   def test_translate_with_string_default
     translation = translate(:'translations.missing', default: "A Generic String")
     assert_equal "A Generic String", translation
@@ -243,7 +251,11 @@ class TranslationHelperTest < ActiveSupport::TestCase
 
   def test_translate_does_not_change_options
     options = {}
-    translate(:'translations.missing', options)
+    if RUBY_VERSION >= "2.7"
+      translate(:'translations.missing', **options)
+    else
+      translate(:'translations.missing', options)
+    end
     assert_equal({}, options)
   end
 end

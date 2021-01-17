@@ -160,6 +160,9 @@ class Author < ActiveRecord::Base
   has_many :posts_with_signature, ->(record) { where("posts.title LIKE ?", "%by #{record.name.downcase}%") }, class_name: "Post"
   has_many :posts_mentioning_author, ->(record = nil) { where("posts.body LIKE ?", "%#{record&.name&.downcase}%") }, class_name: "Post"
 
+  has_one :recent_post, -> { order(id: :desc) }, class_name: "Post"
+  has_one :recent_response, through: :recent_post, source: :comments
+
   has_many :posts_with_extension, -> { order(:title) }, class_name: "Post" do
     def extension_method; end
   end
@@ -170,6 +173,9 @@ class Author < ActiveRecord::Base
 
   has_many :top_posts, -> { order(id: :asc) }, class_name: "Post"
   has_many :other_top_posts, -> { order(id: :asc) }, class_name: "Post"
+
+  has_many :lazy_readers_skimmers_or_not, through: :posts
+  has_many :lazy_readers_skimmers_or_not_2, through: :posts_with_no_comments, source: :lazy_readers_skimmers_or_not
 
   attr_accessor :post_log
   after_initialize :set_post_log

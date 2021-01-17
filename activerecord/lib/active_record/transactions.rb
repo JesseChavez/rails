@@ -208,8 +208,8 @@ module ActiveRecord
     # Note that "TRUNCATE" is also a MySQL DDL statement!
     module ClassMethods
       # See the ConnectionAdapters::DatabaseStatements#transaction API docs.
-      def transaction(options = {}, &block)
-        connection.transaction(options, &block)
+      def transaction(**options, &block)
+        connection.transaction(**options, &block)
       end
 
       def before_commit(*args, &block) # :nodoc:
@@ -303,22 +303,22 @@ module ActiveRecord
 
     # See ActiveRecord::Transactions::ClassMethods for detailed documentation.
     def transaction(options = {}, &block)
-      self.class.transaction(options, &block)
+      self.class.transaction(**options, &block)
     end
 
     def destroy #:nodoc:
       with_transaction_returning_status { super }
     end
 
-    def save(*) #:nodoc:
+    def save(*, **) #:nodoc:
       with_transaction_returning_status { super }
     end
 
-    def save!(*) #:nodoc:
+    def save!(*, **) #:nodoc:
       with_transaction_returning_status { super }
     end
 
-    def touch(*) #:nodoc:
+    def touch(*, **) #:nodoc:
       with_transaction_returning_status { super }
     end
 
@@ -339,7 +339,7 @@ module ActiveRecord
         _run_commit_callbacks
       end
     ensure
-      @_committed_already_called = false
+      @_committed_already_called = @_trigger_update_callback = @_trigger_destroy_callback = false
     end
 
     # Call the #after_rollback callbacks. The +force_restore_state+ argument indicates if the record
@@ -352,6 +352,7 @@ module ActiveRecord
     ensure
       restore_transaction_record_state(force_restore_state)
       clear_transaction_record_state
+      @_trigger_update_callback = @_trigger_destroy_callback = false if force_restore_state
     end
 
     # Executes +method+ within a transaction and captures its return value as a
