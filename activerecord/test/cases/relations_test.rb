@@ -317,9 +317,9 @@ class RelationTest < ActiveRecord::TestCase
   end
 
   def test_reverse_order_with_function_other_predicates
-    topics = Topic.order("author_name, length(title), id").reverse_order
+    topics = Topic.order("author_name, len(title), id").reverse_order
     assert_equal topics(:second).title, topics.first.title
-    topics = Topic.order("length(author_name), id, length(title)").reverse_order
+    topics = Topic.order("len(author_name), id, len(title)").reverse_order
     assert_equal topics(:fifth).title, topics.first.title
   end
 
@@ -334,7 +334,7 @@ class RelationTest < ActiveRecord::TestCase
       Topic.order(Arel.sql("concat(author_name, lower(title))")).reverse_order
     end
     assert_raises(ActiveRecord::IrreversibleOrderError) do
-      Topic.order(Arel.sql("concat(lower(author_name), title, length(title)")).reverse_order
+      Topic.order(Arel.sql("concat(lower(author_name), title, len(title)")).reverse_order
     end
   end
 
