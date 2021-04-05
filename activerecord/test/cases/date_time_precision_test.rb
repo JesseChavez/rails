@@ -45,7 +45,7 @@ if supports_datetime_with_precision?
       assert_equal 123456000, foo.updated_at.nsec
     end
 
-    unless current_adapter?(:Mysql2Adapter)
+    unless current_adapter?(:Mysql2Adapter, :MSSQLAdapter)
       def test_no_datetime_precision_isnt_truncated_on_assignment
         @connection.create_table(:foos, force: true)
         @connection.add_column :foos, :created_at, :datetime
@@ -82,9 +82,11 @@ if supports_datetime_with_precision?
     end
 
     def test_invalid_datetime_precision_raises_error
+      precision = current_adapter?(:MSSQLAdapter) ? 8 : 7
+
       assert_raises ArgumentError do
         @connection.create_table(:foos, force: true) do |t|
-          t.timestamps precision: 7
+          t.timestamps precision: precision
         end
       end
     end
