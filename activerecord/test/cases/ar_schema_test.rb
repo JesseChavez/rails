@@ -168,8 +168,8 @@ class ActiveRecordSchemaTest < ActiveRecord::TestCase
         end
       end
 
-      assert @connection.column_exists?(:has_timestamps, :created_at, precision: 6, null: false)
-      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: 6, null: false)
+      assert @connection.column_exists?(:has_timestamps, :created_at, precision: nil, null: false)
+      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: nil, null: false)
     end
 
     def test_timestamps_sets_precision_on_change_table
@@ -181,8 +181,8 @@ class ActiveRecordSchemaTest < ActiveRecord::TestCase
         end
       end
 
-      assert @connection.column_exists?(:has_timestamps, :created_at, precision: 6, null: false)
-      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: 6, null: false)
+      assert @connection.column_exists?(:has_timestamps, :created_at, precision: nil, null: false)
+      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: nil, null: false)
     end
 
     if ActiveRecord::Base.connection.supports_bulk_alter?
@@ -206,8 +206,8 @@ class ActiveRecordSchemaTest < ActiveRecord::TestCase
         add_timestamps :has_timestamps, default: Time.now
       end
 
-      assert @connection.column_exists?(:has_timestamps, :created_at, precision: 6, null: false)
-      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: 6, null: false)
+      assert @connection.column_exists?(:has_timestamps, :created_at, precision: nil, null: false)
+      assert @connection.column_exists?(:has_timestamps, :updated_at, precision: nil, null: false)
     end
   end
 end
