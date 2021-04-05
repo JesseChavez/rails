@@ -37,7 +37,7 @@ class HasOneThroughAssociationsTest < ActiveRecord::TestCase
 
   def test_has_one_through_executes_limited_query
     boring_club = clubs(:boring_club)
-    assert_sql(/LIMIT|ROWNUM <=|FETCH FIRST/) do
+    assert_sql(/LIMIT|ROWNUM <=|FETCH (FIRST|NEXT)/) do
       assert_equal boring_club, @member.general_club
     end
   end
