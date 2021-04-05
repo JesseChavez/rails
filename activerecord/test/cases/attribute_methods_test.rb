@@ -611,7 +611,7 @@ class AttributeMethodsTest < ActiveRecord::TestCase
   test "typecast attribute from select to false" do
     Topic.create(title: "Budget")
     # Oracle does not support boolean expressions in SELECT.
-    if current_adapter?(:OracleAdapter)
+    if current_adapter?(:OracleAdapter, :MSSQLAdapter)
       topic = Topic.all.merge!(select: "topics.*, 0 as is_test").first
     else
       topic = Topic.all.merge!(select: "topics.*, 1=2 as is_test").first
@@ -622,7 +622,7 @@ class AttributeMethodsTest < ActiveRecord::TestCase
   test "typecast attribute from select to true" do
     Topic.create(title: "Budget")
     # Oracle does not support boolean expressions in SELECT.
-    if current_adapter?(:OracleAdapter)
+    if current_adapter?(:OracleAdapter, :MSSQLAdapter)
       topic = Topic.all.merge!(select: "topics.*, 1 as is_test").first
     else
       topic = Topic.all.merge!(select: "topics.*, 2=2 as is_test").first
