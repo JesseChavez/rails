@@ -67,6 +67,7 @@ class InsertAllTest < ActiveRecord::TestCase
   end
 
   def test_insert_all_raises_on_duplicate_records
+    # passes since we ad partial index in author_id
     assert_raise ActiveRecord::RecordNotUnique do
       Book.insert_all! [
         { name: "Rework", author_id: 1 },

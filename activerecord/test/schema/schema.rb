@@ -112,7 +112,11 @@ ActiveRecord::Schema.define do
     t.string :external_id
     t.datetime :published_on
     t.boolean :boolean_status
-    t.index [:author_id, :name], unique: true
+    if current_adapter?(:MSSQLAdapter)
+      t.index [:author_id, :name], where: "author_id IS NOT NULL", unique: true
+    else
+      t.index [:author_id, :name], unique: true
+    end
     t.integer :tags_count, default: 0
     t.index :isbn, where: "published_on IS NOT NULL", unique: true
     t.index "(lower(external_id))", unique: true if supports_expression_index?
