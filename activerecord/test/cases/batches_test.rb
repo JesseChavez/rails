@@ -439,7 +439,7 @@ class EachTest < ActiveRecord::TestCase
 
   def test_in_batches_should_quote_batch_order
     c = Post.connection
-    assert_sql(/ORDER BY #{c.quote_table_name('posts')}\.#{c.quote_column_name('id')}/) do
+    assert_sql(/ORDER BY #{Regexp.escape(c.quote_table_name("posts.id"))}/) do
       Post.in_batches(of: 1) do |relation|
         assert_kind_of ActiveRecord::Relation, relation
         assert_kind_of Post, relation.first

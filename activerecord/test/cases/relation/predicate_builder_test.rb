@@ -16,11 +16,11 @@ module ActiveRecord
     end
 
     def test_registering_new_handlers
-      assert_match %r{#{Regexp.escape(topic_title)} ~ 'rails'}i, Topic.where(title: /rails/).to_sql
+      assert_match %r{#{Regexp.escape(topic_title)} ~ N?'rails'}i, Topic.where(title: /rails/).to_sql
     end
 
     def test_registering_new_handlers_for_association
-      assert_match %r{#{Regexp.escape(topic_title)} ~ 'rails'}i, Reply.joins(:topic).where(topics: { title: /rails/ }).to_sql
+      assert_match %r{#{Regexp.escape(topic_title)} ~ N?'rails'}i, Reply.joins(:topic).where(topics: { title: /rails/ }).to_sql
     end
 
     private
