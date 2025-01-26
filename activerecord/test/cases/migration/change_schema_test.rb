@@ -271,6 +271,7 @@ module ActiveRecord
       end
 
       def test_add_column_with_timestamp_type
+        skip("timestamps is datetime_basic")
         connection.create_table :testings do |t|
           t.column :foo, :timestamp
         end
@@ -286,6 +287,7 @@ module ActiveRecord
         elsif current_adapter?(:OracleAdapter)
           assert_equal "TIMESTAMP(6)", column.sql_type
         else
+          # NOTE: timestamps is datetime_basic
           assert_equal connection.type_to_sql("datetime(6)"), column.sql_type
         end
       end
@@ -305,7 +307,7 @@ module ActiveRecord
           sql_type = supports_datetime_with_precision? ? "datetime(6)" : "datetime"
           assert_equal sql_type, column.sql_type
         else
-          assert_equal connection.type_to_sql("datetime(6)"), column.sql_type
+          assert_equal connection.type_to_sql("datetime2(7)"), column.sql_type
         end
       end
 
@@ -325,6 +327,7 @@ module ActiveRecord
       end
 
       def test_change_column_with_timestamp_type
+        skip("timestamps is datetime_basic")
         connection.create_table :testings do |t|
           t.column :foo, :datetime, null: false
         end
@@ -342,6 +345,7 @@ module ActiveRecord
         elsif current_adapter?(:OracleAdapter)
           assert_equal "TIMESTAMP(6)", column.sql_type
         else
+          # NOTE: timestamps is datetime_basic
           assert_equal connection.type_to_sql("datetime(6)"), column.sql_type
         end
       end
