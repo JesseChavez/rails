@@ -133,7 +133,7 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "order: always allows Arel" do
-    titles = Post.order(Arel.sql("length(title)")).pluck(:title)
+    titles = Post.order(Arel.sql("len(title)")).pluck(:title)
 
     assert_not_empty titles
   end
@@ -159,9 +159,9 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "order: allows valid Array arguments" do
-    ids_expected = Post.order(Arel.sql("author_id, length(title)")).pluck(:id)
+    ids_expected = Post.order(Arel.sql("author_id, len(title)")).pluck(:id)
 
-    ids = Post.order(["author_id", "length(title)"]).pluck(:id)
+    ids = Post.order(["author_id", "len(title)"]).pluck(:id)
 
     assert_equal ids_expected, ids
   end
@@ -182,9 +182,9 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "order: allows nested functions" do
-    ids_expected = Post.order(Arel.sql("author_id, length(trim(title))")).pluck(:id)
+    ids_expected = Post.order(Arel.sql("author_id, len(trim(title))")).pluck(:id)
 
-    ids = Post.order("author_id, length(trim(title))").pluck(:id)
+    ids = Post.order("author_id, len(trim(title))").pluck(:id)
 
     assert_equal ids_expected, ids
   end
@@ -263,9 +263,9 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
   end
 
   test "pluck: allows nested functions" do
-    title_lengths_expected = Post.pluck(Arel.sql("length(trim(title))"))
+    title_lengths_expected = Post.pluck(Arel.sql("len(trim(title))"))
 
-    title_lengths = Post.pluck("length(trim(title))")
+    title_lengths = Post.pluck("len(trim(title))")
 
     assert_equal title_lengths_expected, title_lengths
   end
@@ -290,7 +290,7 @@ class UnsafeRawSqlTest < ActiveRecord::TestCase
 
   test "pluck: always allows Arel" do
     excepted_values = Post.includes(:comments).pluck(:title).map { |title| [title, title.size] }
-    values = Post.includes(:comments).pluck(:title, Arel.sql("length(title)"))
+    values = Post.includes(:comments).pluck(:title, Arel.sql("len(title)"))
 
     assert_equal excepted_values, values
   end
