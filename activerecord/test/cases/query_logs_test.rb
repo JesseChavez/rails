@@ -263,7 +263,7 @@ class QueryLogsTest < ActiveRecord::TestCase
   unless current_adapter?(:PostgreSQLAdapter)
     def test_invalid_encoding_query
       ActiveRecord::QueryLogs.tags = [ :application ]
-      assert_nothing_raised do
+      assert_raises ActiveRecord::StatementInvalid do
         ActiveRecord::Base.lease_connection.execute "select 1 as '\xFF'"
       end
     end
