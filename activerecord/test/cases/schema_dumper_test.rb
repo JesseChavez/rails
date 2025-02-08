@@ -33,9 +33,9 @@ class SchemaDumperTest < ActiveRecord::TestCase
     schema_info = ActiveRecord::Base.lease_connection.dump_schema_information
     expected = <<~STR
     INSERT INTO #{ActiveRecord::Base.lease_connection.quote_table_name("schema_migrations")} (version) VALUES
-    ('20100301010101'),
-    ('20100201010101'),
-    ('20100101010101');
+    (N'20100301010101'),
+    (N'20100201010101'),
+    (N'20100101010101');
     STR
     assert_equal expected.strip, schema_info
   ensure
@@ -185,7 +185,7 @@ class SchemaDumperTest < ActiveRecord::TestCase
   def test_schema_dumps_partial_indices
     index_definition = dump_table_schema("companies").split(/\n/).grep(/t\.index.*company_partial_index/).first.strip
     if ActiveRecord::Base.lease_connection.supports_partial_index?
-      assert_equal 't.index ["firm_id", "type"], name: "company_partial_index", where: "(rating > 10)"', index_definition
+      assert_equal 't.index ["firm_id", "type"], name: "company_partial_index", where: "([rating]>(10))"', index_definition
     else
       assert_equal 't.index ["firm_id", "type"], name: "company_partial_index"', index_definition
     end
@@ -451,7 +451,11 @@ class SchemaDumperTest < ActiveRecord::TestCase
   def test_schema_dump_keeps_large_precision_integer_columns_as_decimal
     output = standard_dump
 
-    assert_match %r{t\.decimal\s+"atoms_in_universe",\s+precision: 55}, output
+    if current_adapter?(:MSSQLAdapter)
+      assert_match %r{t\.decimal\s+"atoms_in_universe",\s+precision: 38}, output
+    else
+      assert_match %r{t\.decimal\s+"atoms_in_universe",\s+precision: 55}, output
+    end
   end
 
   def test_schema_dump_keeps_id_column_when_id_is_false_and_id_column_added
@@ -935,7 +939,7 @@ class SchemaDumperDefaultsTest < ActiveRecord::TestCase
         if current_adapter?(:PostgreSQLAdapter)
           t.text :uuid, default: -> { "gen_random_uuid()" }
         else
-          t.text :uuid, default: -> { "uuid()" }
+          t.text :uuid, default: -> { "newid()" }
         end
       end
     end
@@ -980,7 +984,7 @@ class SchemaDumperDefaultsTest < ActiveRecord::TestCase
     if current_adapter?(:PostgreSQLAdapter)
       assert_match %r{t\.text\s+"uuid",.*?default: -> \{ "gen_random_uuid\(\)" \}}, output
     else
-      assert_match %r{t\.text\s+"uuid",.*?default: -> \{ "uuid\(\)" \}}, output
+      assert_match %r{t\.text\s+"uuid",.*?default: -> \{ "newid\(\)" \}}, output
     end
   end if supports_text_column_with_default?
 
