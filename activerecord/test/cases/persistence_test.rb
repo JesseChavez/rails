@@ -1605,6 +1605,7 @@ class PersistenceTest < ActiveRecord::TestCase
   end
 
   def test_model_with_no_auto_populated_fields_still_returns_primary_key_after_insert
+    skip("mssql: not possible to set the primary key column using a trigger and to get it then to return")
     record = PkAutopopulatedByATriggerRecord.create
 
     assert_not_nil record.id
