@@ -440,13 +440,13 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_include_on_unloaded_relation_with_match
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS ONLY/) do
       assert_equal true, Customer.where(name: "David").include?(customers(:david))
     end
   end
 
   def test_include_on_unloaded_relation_without_match
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS ONLY/) do
       assert_equal false, Customer.where(name: "David").include?(customers(:mary))
     end
   end
@@ -504,7 +504,7 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_include_on_unloaded_relation_with_composite_primary_key
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS/) do
       book = cpk_books(:cpk_great_author_first_book)
       assert Cpk::Book.where(title: "The first book").include?(book)
     end
@@ -520,13 +520,13 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_member_on_unloaded_relation_with_match
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS ONLY/) do
       assert_equal true, Customer.where(name: "David").member?(customers(:david))
     end
   end
 
   def test_member_on_unloaded_relation_without_match
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS ONLY/) do
       assert_equal false, Customer.where(name: "David").member?(customers(:mary))
     end
   end
@@ -575,7 +575,7 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_member_on_unloaded_relation_with_composite_primary_key
-    assert_queries_match(/1 AS one.*LIMIT/) do
+    assert_queries_match(/1 AS one.*FETCH NEXT \? ROWS ONLY/) do
       book = cpk_books(:cpk_great_author_first_book)
       assert Cpk::Book.where(title: "The first book").member?(book)
     end
@@ -949,11 +949,11 @@ class FinderTest < ActiveRecord::TestCase
 
   def test_nth_to_last_with_order_uses_limit
     c = Topic.lease_connection
-    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.id"))} DESC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.id"))} DESC OFFSET \? ROWS FETCH NEXT \? ROWS ONLY/i) do
       Topic.second_to_last
     end
 
-    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.updated_at"))} DESC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.updated_at"))} DESC OFFSET \? ROWS FETCH NEXT \? ROWS ONLY/i) do
       Topic.order(:updated_at).second_to_last
     end
   end
@@ -979,9 +979,9 @@ class FinderTest < ActiveRecord::TestCase
   end
 
   def test_take_and_first_and_last_with_integer_should_use_sql_limit
-    assert_queries_match(/LIMIT|ROWNUM <=|FETCH FIRST/) { Topic.take(3).entries }
-    assert_queries_match(/LIMIT|ROWNUM <=|FETCH FIRST/) { Topic.first(2).entries }
-    assert_queries_match(/LIMIT|ROWNUM <=|FETCH FIRST/) { Topic.last(5).entries }
+    assert_queries_match(/LIMIT|ROWNUM <=|FETCH NEXT/) { Topic.take(3).entries }
+    assert_queries_match(/LIMIT|ROWNUM <=|FETCH NEXT/) { Topic.first(2).entries }
+    assert_queries_match(/LIMIT|ROWNUM <=|FETCH NEXT/) { Topic.last(5).entries }
   end
 
   def test_last_with_integer_and_order_should_keep_the_order
@@ -1067,7 +1067,7 @@ class FinderTest < ActiveRecord::TestCase
     assert_equal topics(:third), Topic.last
 
     c = Topic.lease_connection
-    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.title"))} DESC, #{Regexp.escape(c.quote_table_name("topics.id"))} DESC LIMIT/i) {
+    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.title"))} DESC, #{Regexp.escape(c.quote_table_name("topics.id"))} DESC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) {
       Topic.last
     }
   ensure
@@ -1079,7 +1079,7 @@ class FinderTest < ActiveRecord::TestCase
     Topic.implicit_order_column = "id"
 
     c = Topic.lease_connection
-    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.id"))} DESC LIMIT/i) {
+    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("topics.id"))} DESC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) {
       Topic.last
     }
   ensure
@@ -1091,7 +1091,7 @@ class FinderTest < ActiveRecord::TestCase
     NonPrimaryKey.implicit_order_column = "created_at"
 
     c = NonPrimaryKey.lease_connection
-    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("non_primary_keys.created_at"))} DESC LIMIT/i) {
+    assert_queries_match(/ORDER BY #{Regexp.escape(c.quote_table_name("non_primary_keys.created_at"))} DESC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) {
       NonPrimaryKey.last
     }
   ensure
@@ -1104,7 +1104,7 @@ class FinderTest < ActiveRecord::TestCase
     quoted_type = Regexp.escape(c.quote_table_name("clothing_items.clothing_type"))
     quoted_color = Regexp.escape(c.quote_table_name("clothing_items.color"))
 
-    assert_queries_match(/ORDER BY #{quoted_color} ASC, #{quoted_type} ASC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{quoted_color} ASC, #{quoted_type} ASC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) do
       assert_kind_of ClothingItem, ClothingItem.first
     end
   ensure
@@ -1118,7 +1118,7 @@ class FinderTest < ActiveRecord::TestCase
     quoted_color = Regexp.escape(c.quote_table_name("clothing_items.color"))
     quoted_descrption = Regexp.escape(c.quote_table_name("clothing_items.description"))
 
-    assert_queries_match(/ORDER BY #{quoted_descrption} ASC, #{quoted_type} ASC, #{quoted_color} ASC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{quoted_descrption} ASC, #{quoted_type} ASC, #{quoted_color} ASC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) do
       assert_kind_of ClothingItem, ClothingItem.first
     end
   ensure
@@ -1828,7 +1828,7 @@ class FinderTest < ActiveRecord::TestCase
     quoted_type = Regexp.escape(c.quote_table_name("clothing_items.clothing_type"))
     quoted_color = Regexp.escape(c.quote_table_name("clothing_items.color"))
 
-    assert_queries_match(/ORDER BY #{quoted_type} DESC, #{quoted_color} DESC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{quoted_type} DESC, #{quoted_color} DESC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) do
       assert_kind_of ClothingItem, ClothingItem.last
     end
   end
@@ -1838,7 +1838,7 @@ class FinderTest < ActiveRecord::TestCase
     quoted_type = Regexp.escape(c.quote_table_name("clothing_items.clothing_type"))
     quoted_color = Regexp.escape(c.quote_table_name("clothing_items.color"))
 
-    assert_queries_match(/ORDER BY #{quoted_type} ASC, #{quoted_color} ASC LIMIT/i) do
+    assert_queries_match(/ORDER BY #{quoted_type} ASC, #{quoted_color} ASC OFFSET 0 ROWS FETCH NEXT \? ROWS ONLY/i) do
       assert_kind_of ClothingItem, ClothingItem.first
     end
   end
