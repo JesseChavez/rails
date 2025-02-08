@@ -54,7 +54,9 @@ class TimePrecisionTest < ActiveRecord::TestCase
         time = ::Time.now.change(nsec: 123)
         foo = Foo.new(start: time, finish: time)
 
-        assert_equal 123, foo.start.nsec
+        # NOTE: adapter default precision is 7 (max mssql) and JRuby generates
+        # only usec so adapter rounds nsec to 0 to avoid issues
+        assert_equal 0, foo.start.nsec
         assert_equal 0, foo.finish.nsec
 
         foo.save!
@@ -75,10 +77,11 @@ class TimePrecisionTest < ActiveRecord::TestCase
     end
 
     def test_invalid_time_precision_raises_error
+      # NOTE: max precision is 7 for mssql so invalid is 8 or more
       assert_raises ArgumentError do
         @connection.create_table(:foos, force: true) do |t|
-          t.time :start,  precision: 7
-          t.time :finish, precision: 7
+          t.time :start,  precision: 8
+          t.time :finish, precision: 8
         end
       end
     end
