@@ -387,16 +387,14 @@ class MigrationTest < ActiveRecord::TestCase
     migration_a = Class.new(ActiveRecord::Migration::Current) {
       def version; 100 end
       def migrate(x)
-        type = ActiveRecord::TestCase.current_adapter?(:PostgreSQLAdapter) ? :char : :blob
-        add_column "people", "last_name", type
+        add_column "people", "last_name", :binary
       end
     }.new
 
     migration_b = Class.new(ActiveRecord::Migration::Current) {
       def version; 101 end
       def migrate(x)
-        type = ActiveRecord::TestCase.current_adapter?(:PostgreSQLAdapter) ? :char : :blob
-        add_column "people", "last_name", type, if_not_exists: true
+        add_column "people", "last_name", :binary, if_not_exists: true
       end
     }.new
 
