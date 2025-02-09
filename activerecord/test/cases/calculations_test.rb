@@ -367,7 +367,7 @@ class CalculationsTest < ActiveRecord::TestCase
   end
 
   def test_distinct_count_all_with_custom_select_and_order
-    accounts = Account.distinct.select("credit_limit % 10").order(Arel.sql("credit_limit % 10"))
+    accounts = Account.distinct.select("credit_limit % 10 AS the_limit").order(Arel.sql("credit_limit % 10"))
     assert_queries_count(1) { assert_equal 3, accounts.count(:all) }
     assert_queries_count(1) { assert_equal 3, accounts.load.size }
   end
