@@ -55,7 +55,9 @@ class DateTimePrecisionTest < ActiveRecord::TestCase
         time = ::Time.now.change(nsec: 123)
         foo = Foo.new(created_at: time, updated_at: time)
 
-        assert_equal 123, foo.created_at.nsec
+        # mssql adapter truncates on assignment, to avoid issues in the java part
+        # of adapter
+        assert_equal 0, foo.created_at.nsec
         assert_equal 0, foo.updated_at.nsec
 
         foo.save!
@@ -83,9 +85,10 @@ class DateTimePrecisionTest < ActiveRecord::TestCase
     end
 
     def test_invalid_datetime_precision_raises_error
+      # mssql max precison is 7, it's also the default
       assert_raises ArgumentError do
         @connection.create_table(:foos, force: true) do |t|
-          t.timestamps precision: 7
+          t.timestamps precision: 8
         end
       end
     end
@@ -229,7 +232,7 @@ class DateTimePrecisionTest < ActiveRecord::TestCase
 
     def test_schema_dump_with_default_precision_is_not_dumped
       @connection.create_table(:foos, force: true) do |t|
-        t.timestamps precision: 6
+        t.timestamps # precision: 6
       end
       output = dump_table_schema("foos")
       assert_match %r{t\.datetime\s+"created_at",\s+null: false$}, output
@@ -237,12 +240,15 @@ class DateTimePrecisionTest < ActiveRecord::TestCase
     end
 
     def test_schema_dump_with_without_precision_has_precision_as_nil
+      # NOTE: for this adapter of precision is nil the it will take default precision
       @connection.create_table(:foos, force: true) do |t|
         t.timestamps precision: nil
       end
       output = dump_table_schema("foos")
-      assert_match %r{t\.datetime\s+"created_at",\s+precision: nil,\s+null: false$}, output
-      assert_match %r{t\.datetime\s+"updated_at",\s+precision: nil,\s+null: false$}, output
+      # assert_match %r{t\.datetime\s+"created_at",\s+precision: nil,\s+null: false$}, output
+      # assert_match %r{t\.datetime\s+"created_at",\s+precision: nil,\s+null: false$}, output
+      assert_match %r{t\.datetime\s+"updated_at",\s+null: false$}, output
+      assert_match %r{t\.datetime\s+"updated_at",\s+null: false$}, output
     end
 
     if current_adapter?(:PostgreSQLAdapter)
