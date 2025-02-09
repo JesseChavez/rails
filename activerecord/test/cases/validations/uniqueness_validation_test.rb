@@ -371,7 +371,7 @@ class UniquenessValidationTest < ActiveRecord::TestCase
     assert_not topic1.valid?
     assert_not topic1.save
 
-    if current_adapter?(:Mysql2Adapter, :TrilogyAdapter)
+    if current_adapter?(:Mysql2Adapter, :TrilogyAdapter, :MSSQLAdapter)
       # Case insensitive collation (utf8mb4_0900_ai_ci) by default.
       # Should not allow "David" if "david" exists.
       assert_not topic2.valid?
