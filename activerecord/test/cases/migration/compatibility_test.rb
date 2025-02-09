@@ -304,8 +304,8 @@ module ActiveRecord
 
         ActiveRecord::Migrator.new(:up, [migration], @schema_migration, @internal_metadata).migrate
 
-        assert connection.column_exists?(:more_testings, :created_at, precision: 6)
-        assert connection.column_exists?(:more_testings, :updated_at, precision: 6)
+        assert connection.column_exists?(:more_testings, :created_at, precision: 7)
+        assert connection.column_exists?(:more_testings, :updated_at, precision: 7)
       ensure
         connection.drop_table :more_testings rescue nil
       end
@@ -669,7 +669,8 @@ module ActiveRecord
           if current_adapter?(:Mysql2Adapter, :TrilogyAdapter)
             { precision: 0 }
           else
-            { precision: nil }
+            # MSSQL adapter supported default precison 7 since rails 5.0
+            { precision: 7 }
           end
         end
     end
@@ -749,6 +750,7 @@ module DefaultPrecisionImplicitTestCases
     connection.drop_table :more_testings rescue nil
   end
 
+
   def test_datetime_doesnt_set_precision_on_change_column
     create_migration = Class.new(migration_class) {
       def migrate(x)
@@ -776,7 +778,7 @@ module DefaultPrecisionImplicitTestCases
       if current_adapter?(:Mysql2Adapter, :TrilogyAdapter)
         { precision: 0 }
       else
-        { precision: nil }
+        { precision: 7 }
       end
     end
 end
@@ -801,7 +803,7 @@ module DefaultPrecisionSixTestCases
 
     ActiveRecord::Migrator.new(:up, [create_migration, change_migration], @schema_migration, @internal_metadata).migrate
 
-    assert connection.column_exists?(:more_testings, :published_at, precision: 6)
+    assert connection.column_exists?(:more_testings, :published_at, precision: 7)
   ensure
     connection.drop_table :more_testings rescue nil
   end
@@ -817,7 +819,7 @@ module DefaultPrecisionSixTestCases
 
     ActiveRecord::Migrator.new(:up, [migration], @schema_migration, @internal_metadata).migrate
 
-    assert connection.column_exists?(:more_testings, :published_at, precision: 6)
+    assert connection.column_exists?(:more_testings, :published_at, precision: 7)
   ensure
     connection.drop_table :more_testings rescue nil
   end
@@ -839,7 +841,7 @@ module DefaultPrecisionSixTestCases
 
     ActiveRecord::Migrator.new(:up, [create_migration, change_migration], @schema_migration, @internal_metadata).migrate
 
-    assert connection.column_exists?(:more_testings, :published_at, precision: 6)
+    assert connection.column_exists?(:more_testings, :published_at, precision: 7)
   ensure
     connection.drop_table :more_testings rescue nil
   end
@@ -847,6 +849,8 @@ end
 
 class BaseCompatibilityTest < ActiveRecord::TestCase
   attr_reader :connection
+
+  self.use_transactional_tests = false
 
   def setup
     @connection = ActiveRecord::Base.lease_connection
